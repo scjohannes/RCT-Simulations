@@ -1,31 +1,51 @@
-# This code will mimic a 2-group parallel-arm randomized trial using 1:1 allocation of patients to treatment 0 ("control") versus treatment 1 ("treatment")
-# For this example, we will use a binary outcome of "death"
-# Patients receiving treatment 0 will have 40% probability of death
-# Patients receiving treatment 1 will have 30% probability of death
-# Analysis will be performed using a logistic regression model for interim and final analysis
-# We will run 1000 simulated RCT's and report the odds ratio, 95% confidence interval, and p-value for each simulated trial at interim and final analysis
-# The "true" treatment effect for a treatment that reduces probability of outcome from 40% to 30% is about OR = 0.642
-# The power of a trial with N=1000 patients and exactly 1:1 allocation under these assumptions is about 91-92%
-# In this example, we are now adding code that mimics performing one interim analysis with an efficacy stopping rule
-# The interim strategy in the code shown here mimics an O'Brien-Fleming rule with one interim analysis that takes place at 50% observed information
-# The power of a trial with N=1000 patients and exactly 1:1 allocation under these assumptions with this design is about 91-92%
+#This code will mimic a 2-group parallel-arm randomized trial using 1:1
+#allocation of patients to treatment 0 ("control") versus treatment 1
+#("treatment"). For this example, we will use a binary outcome of "death"
+#Patients receiving treatment 0 will have 40% probability of death. Patients
+#receiving treatment 1 will have 30% probability of death. Analysis will be
+#performed using a logistic regression model for interim and final analysis. We
+#will run 1000 simulated RCT's and report the odds ratio, 95% confidence
+#interval, and p-value for each simulated trial at interim and final analysis.
+#The "true" treatment effect for a treatment that reduces probability of outcome
+#from 40% to 30% is about OR = 0.642. The power of a trial with N=1000 patients
+#and exactly 1:1 allocation under these assumptions is about 91-92%. In this
+#example, we are now adding code that mimics performing one interim analysis
+#with an efficacy stopping rule. The interim strategy in the code shown here
+#mimics an O'Brien-Fleming rule with one interim analysis that takes place at
+#50% observed information. The power of a trial with N=1000 patients and exactly
+#1:1 allocation under these assumptions with this design is about 91-92%.
+
+library(ggplot2)
+library(dplyr)
 
 # Trial Design Parameters
 nPatients <- 1000 # here is where you specify the planned max number of patients you want included in each RCT 
 nInterim <- 500 # here is where you specify the number of patients where you want the interim anaysis to occur
-# NOTE: the alpha thresholds specified here are set for the O'Brien Fleming rule with an interim occurring at 50% observed information
-#   if you want to use a different time for the interim analysis (e.g. 75% rather than 50%) need to adjust the alpha thresholds below
+
+# NOTE: the alpha thresholds specified here are set for the O'Brien Fleming rule
+# with an interim occurring at 50% observed information if you want to use a
+# different time for the interim analysis (e.g. 75% rather than 50%) need to
+# adjust the alpha thresholds below
 interim_efficacy_threshold <- 0.0054 # here is where you specify the p-value for stopping at interim analysis 
 final_efficacy_threshold <- 0.0492 # here is where you specify the p-value for declaring success at final if trial continues past the interim analysis
-# NOTE: 0.0054 and 0.0492 are the thresholds for an O'Brien Fleming with one interim analysis that takes place at 50% of the observed outcome data
-# If you want to fiddle with different stopping thresholds, I do suggest reading up on different approaches to alpha spending, but the simulations here
-#    will be interesting for you to play with if you want to see how operating characteristics (type 1 & type 2 error) change with different thresholds
-#    I will explore this a bit more in a subsequent post that uses the "rpact" package to compute the efficacy stopping thresholds
+
+# NOTE: 0.0054 and 0.0492 are the thresholds for an O'Brien Fleming with one
+# interim analysis that takes place at 50% of the observed outcome data. If you
+# want to fiddle with different stopping thresholds, I do suggest reading up on
+# different approaches to alpha spending, but the simulations here will be
+# interesting for you to play with if you want to see how operating
+# characteristics (type 1 & type 2 error) change with different thresholds. 
+# I will explore this a bit more in a subsequent post that uses the "rpact"
+# package to compute the efficacy stopping thresholds
+
+
 death0 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 0' in these trials
 death1 <- 0.3 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
-# NOTE: if you want to estimate "type 1 error" under different stopping rules, make death = in the two treatment arms (e.g. no treatment effect)
-#    this can be useful to get across that type 1 error increases if you take multiple looks at data using p<0.05 without appropriately accounting 
-#    for the multiple looks at the data
+# NOTE: if you want to estimate "type 1 error" under different stopping rules,
+# make death = in the two treatment arms (e.g. no treatment effect) this can be
+# useful to get across that type 1 error increases if you take multiple looks at
+# data using p<0.05 without appropriately accounting for the multiple looks at
+# the data
 
 # Simulation Parameters
 nSims <- 1000 # here is where you specify the number of trials that you want to simulate
@@ -49,17 +69,21 @@ for(i in 1:nSims){
 pid=seq(1, by=1, len=nPatients) # this creates a sequential list of "pid" from 1 to nPatients which may be useful if you want to perform 'interim analysis' later
 treatment=rep(0:1, nPatients/2) # this creates a vector of "treatment allocations" which is actually just a sequence alternating between 1 and 2
 
-# worth noting: this allocation sequence should not be used in a real RCT, but for the purpose of these simulations it will work fine.  
-# There are no real patients or clinicians created in these simulations, and therefore no worry about someone guessing the next treatment assignment.
-# If you prefer that your simulations actually use “randomized” allocation, you can do this instead:
-# treatment=rbinom(nPatients, 1, 0.5) # this randomly assigns each new patient to receive treatment 0 or 1 with 50% probability each time
-# The reason I prefer the first of the two for simulation is that it maintains even allocation in the number of patients receiving each treatment 
-# (of course, with a wee bit more work one can actually create blocked randomization sequence, but I’m trying to keep this thread simple for newbies)
-# (for those interested in going one step further, the "blockrand" package can be used to generate this, may include in future post)
-# The "simple randomization" example will have slightly lower power due to the allowance for an imbalanced number of patients; 
-# Using "exactly-equal-allocation" means we will be slightly over-estimating the trial power by assuming exactly equal allocation
-# when stratified and/or blocked randomization could allow slightly unequal allocations to occur, e.g. "498 vs 502" patients
-# Constraining to "exactly equal" is close enough in practice to results with blocked randomization that it's my preference
+# worth noting: this allocation sequence should not be used in a real RCT, but
+# for the purpose of these simulations it will work fine. There are no real
+# patients or clinicians created in these simulations, and therefore no worry
+# about someone guessing the next treatment assignment. If you prefer that your
+# simulations actually use “randomized” allocation, you can do this instead:
+# treatment=rbinom(nPatients, 1, 0.5). This randomly assigns each new patient
+# to receive treatment 0 or 1 with 50% probability each time. The reason I prefer
+# the first of the two for simulation is that it maintains even allocation in
+# the number of patients receiving each treatment.  
+
+#Using "exactly-equal-allocation" means we will be slightly over-estimating the
+#trial power by assuming exactly equal allocation when stratified and/or blocked
+#randomization could allow slightly unequal allocations to occur, e.g. "498 vs
+#502" patients Constraining to "exactly equal" is close enough in practice to
+#results with blocked randomization that it's my preference
 
 deathprob <- numeric(nPatients) # this creates an empty vector which we will use to assign death probability for each patient
 deathprob[treatment==0]=death0 # this assigns the probability of death for patients receiving 'treatment 0' to be 'death0'
@@ -94,3 +118,6 @@ or_final, lcl_final, ucl_final, pvalue_final, success_final, overall_success)) #
 head(simulation_results , n=10) # this lets you take a look at the first 10 simulation results to confirm all seems to make sense
 table(success_interim) # this provides a table of the number of simulated trials which concluded success at the interim analysis
 table(overall_success) # this provides a table of the number of simulated trials which concluded that there was a treatment effect
+
+
+#creating data visualization

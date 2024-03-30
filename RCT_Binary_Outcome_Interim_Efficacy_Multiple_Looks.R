@@ -12,11 +12,13 @@ death1 <- 0.3 # here is where you specify the event rate for patients receiving 
 # We will use the rpact package to compute the stopping/success thresholds at interim and final analysis 
 # install.packages("rpact")
 library(rpact)
-nLooks<-3 # here is where you put the number of looks that will take place (INCLUDING the final analysis)
-analyses_scheduled<-(c(0.50, 0.75, 1)) # here is where you list the information fraction (e.g. here 50%, 75% and 100% information)
+
+nLooks<-5 # here is where you put the number of looks that will take place (INCLUDING the final analysis)
+analyses_scheduled<-seq(from = 0.2, to = 1, by = 0.2) # here is where you list the information fraction (e.g. here 50%, 75% and 100% information)
 efficacy_thresholds<-numeric(nLooks)
 
-design <- getDesignGroupSequential(sided=1, alpha=0.05, informationRates=analyses_scheduled, typeOfDesign = "asOF")
+design <- getDesignGroupSequential(sided=1, alpha=0.05, informationRates=analyses_scheduled, typeOfDesign = "OF")
+
 for(j in 1:nLooks){
 efficacy_thresholds[j] = design$stageLevels[j]
 }
@@ -46,38 +48,50 @@ overall_success <- numeric(nSims)
 
 set.seed(1) # this sets the random seed for your results to be reproducible
 
-for(i in 1:nSims){
-
-trialnum[i]=i
-
-pid=seq(1, by=1, len=nPatients)
-treatment=rep(0:1, nPatients/2)
-deathprob <- numeric(nPatients)
-deathprob[treatment==0]=death0
-deathprob[treatment==1]=death1
-death=rbinom(nPatients, 1, deathprob)
-trialdata=data.frame(cbind(pid, treatment, death))
-
-for(j in 1:nLooks){
-analysisdata <- subset(trialdata, pid<=analyses_nPatients[j])
-model <- glm(death ~ treatment, family=binomial(link='logit'), data=analysisdata)
-or[i,j]=round(exp(summary(model)$coefficients[2]), digits=2)
-lcl[i,j]=round(exp(summary(model)$coefficients[2] - 1.96 * summary(model)$coefficients[4]), digits=2)
-ucl[i,j]=round(exp(summary(model)$coefficients[2] + 1.96 * summary(model)$coefficients[4]), digits=2)
-pvalue[i,j]=round(summary(model)$coefficients[8], digits=4)
-success[i,j]=ifelse(or[i,j]<1 & pvalue[i,j]<efficacy_thresholds[j], 1, 0)
-}
-
-overall_success[i] <- 0
-
-for (j in 1:nLooks)
-{
-if(success[i,j]==1)
-{
-overall_success[i] <- 1 
-}
-}
-
+for(i in 1:nSims) {
+  trialnum[i] = i
+  
+  pid = seq(1, by = 1, len = nPatients)
+  treatment = rep(0:1, nPatients / 2)
+  deathprob <- numeric(nPatients)
+  deathprob[treatment == 0] = death0
+  deathprob[treatment == 1] = death1
+  death = rbinom(nPatients, 1, deathprob)
+  trialdata = data.frame(cbind(pid, treatment, death))
+  
+  for (j in 1:nLooks) {
+    analysisdata <- subset(trialdata, pid <= analyses_nPatients[j])
+    
+    model <- glm(death ~ treatment,
+              family = binomial(link = 'logit'),
+              data = analysisdata)
+    
+    or[i, j] = round(exp(summary(model)$coefficients[2]), digits = 2)
+    
+    lcl[i, j] = round(exp(
+      summary(model)$coefficients[2] - 1.96 * summary(model)$coefficients[4]
+    ), digits = 2)
+    
+    ucl[i, j] = round(exp(
+      summary(model)$coefficients[2] + 1.96 * summary(model)$coefficients[4]
+    ), digits = 2)
+    
+    pvalue[i, j] = round(summary(model)$coefficients[8], digits = 4)
+    
+    success[i, j] = ifelse(or[i, j] < 1 &
+                             pvalue[i, j] < efficacy_thresholds[j], 1, 0)
+  }
+  
+  overall_success[i] <- 0
+  
+  for (j in 1:nLooks)
+  {
+    if (success[i, j] == 1)
+    {
+      overall_success[i] <- 1
+    }
+  }
+  
 }
 
 simulation_results <- data.frame(cbind(trialnum,
@@ -91,3 +105,70 @@ table(overall_success)
 table(simulation_results$success_1, overall_success)
 table(simulation_results$success_2, overall_success)
 table(simulation_results$success_3, overall_success)
+
+
+
+#visualize plots
+library(tidyr)
+
+
+#convert everything to long format and one df
+or_long <- or %>% 
+  mutate(trial = row_number()) %>%
+  pivot_longer(
+    cols = starts_with("or_"), 
+    names_to = c("look"), 
+    values_to = "OR"
+  ) %>%
+  mutate(look = as.numeric(gsub("or_", "", look)))
+
+pvalue_long <- pvalue %>% 
+  mutate(trial = row_number()) %>%
+  pivot_longer(
+    cols = starts_with("pvalue_"), 
+    names_to = c("look"), 
+    values_to = "pvalue"
+  ) %>%
+  mutate(look = as.numeric(gsub("pvalue_", "", look)))
+
+success_long <- success %>% 
+  mutate(trial = row_number()) %>%
+  pivot_longer(
+    cols = starts_with("success_"), 
+    names_to = c("look"), 
+    values_to = "success"
+  ) %>%
+  mutate(look = as.numeric(gsub("success_", "", look)))
+
+overall_success_long <- tibble(overall_success = as.factor(rep(overall_success, each = nLooks)))
+
+df_long <- right_join(or_long, pvalue_long)
+df_long <- right_join(df_long, success_long)
+
+df_long <- df_long %>% 
+  bind_cols(overall_success_long) %>%
+  mutate(nPat = case_when(
+    look == 1 ~ 100, 
+    look == 2 ~ 200,
+    look == 3 ~ 300, 
+    look == 4 ~ 400,
+    look == 5 ~ 500
+  ))
+
+#add an index at which look the trial first was stat sig
+df_long_index <- df_long %>%
+  group_by(trial) %>%
+  mutate(first_success_index = which.max(success == 1)) %>% 
+  mutate(first_success_index = ifelse(overall_success == 0, 5, first_success_index)) %>%
+  ungroup()
+
+#have to figure out how to drop the values after first stat sig
+# https://stackoverflow.com/questions/45006712/selecting-top-n-rows-for-each-group-based-on-value-in-column
+
+df_long %>%
+  head(100) %>%
+  ggplot(aes(nPat, OR, group = trial, color = overall_success)) +
+  geom_point() +
+  geom_line() +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "bottom")
