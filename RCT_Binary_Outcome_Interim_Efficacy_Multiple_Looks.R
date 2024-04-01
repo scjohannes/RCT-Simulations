@@ -2,7 +2,7 @@
 # Here we will specify the basics: maximum total number of patients to enroll and event rate for each treatment arm
 nPatients <- 1000 # here is where you specify the planned max number of patients you want included in each RCT 
 death0 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 0' in these trials
-death1 <- 0.3 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
+death1 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
 # I have set this one up to test the power for a treatment that would reduce mortality from 40% in control group (0) to 30% in treatment group (1)
 # If one wants to estimate the "type 1 error" under different interim approaches, simply make 'death0' and 'death1' the same (no treatment effect)
 
@@ -12,12 +12,14 @@ death1 <- 0.3 # here is where you specify the event rate for patients receiving 
 # We will use the rpact package to compute the stopping/success thresholds at interim and final analysis 
 # install.packages("rpact")
 library(rpact)
+library(tidyverse)
+theme_set(theme_light())
 
 nLooks<-5 # here is where you put the number of looks that will take place (INCLUDING the final analysis)
 analyses_scheduled<-seq(from = 0.2, to = 1, by = 0.2) # here is where you list the information fraction (e.g. here 50%, 75% and 100% information)
 efficacy_thresholds<-numeric(nLooks)
 
-design <- getDesignGroupSequential(sided=1, alpha=0.05, informationRates=analyses_scheduled, typeOfDesign = "OF")
+design <- getDesignGroupSequential(sided=1, alpha=0.05, informationRates=analyses_scheduled, typeOfDesign = "P")
 
 for(j in 1:nLooks){
 efficacy_thresholds[j] = design$stageLevels[j]
@@ -46,7 +48,7 @@ colnames(success) <- sprintf("success_%d", (1:nLooks))
 
 overall_success <- numeric(nSims)
 
-set.seed(1) # this sets the random seed for your results to be reproducible
+set.seed(2) # this sets the random seed for your results to be reproducible
 
 for(i in 1:nSims) {
   trialnum[i] = i
@@ -98,6 +100,8 @@ simulation_results <- data.frame(cbind(trialnum,
 or[1], lcl[1], ucl[1], pvalue[1], success[1],
 or[2], lcl[2], ucl[2], pvalue[2], success[2],
 or[3], lcl[3], ucl[3], pvalue[3], success[3],
+or[4], lcl[4], ucl[4], pvalue[4], success[4],
+or[5], lcl[5], ucl[5], pvalue[5], success[5],
 overall_success))
 head(simulation_results, n=10)
 
@@ -105,12 +109,11 @@ table(overall_success)
 table(simulation_results$success_1, overall_success)
 table(simulation_results$success_2, overall_success)
 table(simulation_results$success_3, overall_success)
-
+table(simulation_results$success_4, overall_success)
+table(simulation_results$success_5, overall_success)
 
 
 #visualize plots
-library(tidyr)
-
 
 #convert everything to long format and one df
 or_long <- or %>% 
@@ -148,27 +151,53 @@ df_long <- right_join(df_long, success_long)
 df_long <- df_long %>% 
   bind_cols(overall_success_long) %>%
   mutate(nPat = case_when(
-    look == 1 ~ 100, 
-    look == 2 ~ 200,
-    look == 3 ~ 300, 
-    look == 4 ~ 400,
-    look == 5 ~ 500
+    look == 1 ~ 200, 
+    look == 2 ~ 400,
+    look == 3 ~ 600, 
+    look == 4 ~ 800,
+    look == 5 ~ 1000
   ))
 
-#add an index at which look the trial first was stat sig
-df_long_index <- df_long %>%
+#stop RCT after first sig results
+
+#remove last row if overall_success == 1 but last look wasn't == 1
+df_stopped_interim <- df_long
+
+for (i in 1:nLooks){
+df_stopped_interim <- df_stopped_interim %>%
   group_by(trial) %>%
-  mutate(first_success_index = which.max(success == 1)) %>% 
-  mutate(first_success_index = ifelse(overall_success == 0, 5, first_success_index)) %>%
+  mutate(last_success = if_else(row_number() == n() & success == 0 & overall_success == 1, TRUE, FALSE)) %>%
+  filter(!last_success) %>%
+  select(-last_success) %>%
+  ungroup()
+}
+
+df_stopped_interim %>%
+  filter(!())
+
+df_stopped_interim %>%
+  group_by(trial) %>%
+  filter(row_number() == 1 & success == 1 & overall_success == 1) %>%
   ungroup()
 
-#have to figure out how to drop the values after first stat sig
-# https://stackoverflow.com/questions/45006712/selecting-top-n-rows-for-each-group-based-on-value-in-column
+#data viz  
 
-df_long %>%
-  head(100) %>%
+df_stopped_interim %>%
+  filter(trial > 100 & trial <= 200) %>%
   ggplot(aes(nPat, OR, group = trial, color = overall_success)) +
   geom_point() +
   geom_line() +
   scale_color_manual(values = c("black", "red")) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  ggtitle(design$typeOfDesign)
+
+
+df_long %>%
+  filter(trial > 100 & trial <= 200) %>%
+  ggplot(aes(nPat, OR, group = trial, color = overall_success)) +
+  geom_point() +
+  geom_line() +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "bottom") +
+  ggtitle(design$typeOfDesign)
+
