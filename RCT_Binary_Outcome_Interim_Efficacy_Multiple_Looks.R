@@ -2,7 +2,7 @@
 # Here we will specify the basics: maximum total number of patients to enroll and event rate for each treatment arm
 nPatients <- 1000 # here is where you specify the planned max number of patients you want included in each RCT 
 death0 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 0' in these trials
-death1 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
+death1 <- 0.3 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
 # I have set this one up to test the power for a treatment that would reduce mortality from 40% in control group (0) to 30% in treatment group (1)
 # If one wants to estimate the "type 1 error" under different interim approaches, simply make 'death0' and 'death1' the same (no treatment effect)
 
@@ -158,42 +158,40 @@ df_long <- df_long %>%
     look == 5 ~ 1000
   ))
 
-#stop RCT after first sig results
 
-#remove last row if overall_success == 1 but last look wasn't == 1
-df_stopped_interim <- df_long
+#create dataframe which simulates trial stop after first sig results
 
-for (i in 1:nLooks){
-df_stopped_interim <- df_stopped_interim %>%
+df_stopped_interim <- df_long %>%
   group_by(trial) %>%
-  mutate(last_success = if_else(row_number() == n() & success == 0 & overall_success == 1, TRUE, FALSE)) %>%
-  filter(!last_success) %>%
-  select(-last_success) %>%
+  mutate(first_success_index = min(which(success == 1))) %>%
+  mutate(first_success_index = ifelse(first_success_index == Inf, 5, first_success_index))  %>%
+  filter(row_number() <= first_success_index) %>%
   ungroup()
-}
 
-df_stopped_interim %>%
-  filter(!())
+df_critical_or <- df_stopped_interim %>% 
+  filter(overall_success == 1) %>% 
+  group_by(look, first_success_index) %>% 
+  summarize(critical_or = max(OR)) %>% 
+  ungroup() %>% 
+  filter(as.numeric(look) == first_success_index)
 
-df_stopped_interim %>%
-  group_by(trial) %>%
-  filter(row_number() == 1 & success == 1 & overall_success == 1) %>%
-  ungroup()
+df_critical_or <- tibble(OR = df_critical_or$critical_or, nPat = c(200, 400, 600, 800, 100))
 
 #data viz  
 
 df_stopped_interim %>%
-  filter(trial > 100 & trial <= 200) %>%
+  filter(trial > 800) %>%
   ggplot(aes(nPat, OR, group = trial, color = overall_success)) +
   geom_point() +
   geom_line() +
   scale_color_manual(values = c("black", "red")) +
   theme(legend.position = "bottom") +
-  ggtitle(design$typeOfDesign)
+  ylim(0, 2) +
+  ggtitle(paste("Design : ", design$typeOfDesign, ", event-rate = ", death0, "\nStopped at interim", sep = ""))
 
 
 df_long %>%
-  filter(trial > 100 & trial <= 200) %>%
+  #filter(overall_success == 1) %>%
   ggplot(aes(nPat, OR, group = trial, color = overall_success)) +
   geom_point() +
   geom_line() +
