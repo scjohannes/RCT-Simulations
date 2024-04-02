@@ -2,7 +2,7 @@
 # Here we will specify the basics: maximum total number of patients to enroll and event rate for each treatment arm
 nPatients <- 1000 # here is where you specify the planned max number of patients you want included in each RCT 
 death0 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 0' in these trials
-death1 <- 0.3 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
+death1 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
 # I have set this one up to test the power for a treatment that would reduce mortality from 40% in control group (0) to 30% in treatment group (1)
 # If one wants to estimate the "type 1 error" under different interim approaches, simply make 'death0' and 'death1' the same (no treatment effect)
 
@@ -13,10 +13,11 @@ death1 <- 0.3 # here is where you specify the event rate for patients receiving 
 # install.packages("rpact")
 library(rpact)
 library(tidyverse)
+
 theme_set(theme_light())
 
 nLooks<-5 # here is where you put the number of looks that will take place (INCLUDING the final analysis)
-analyses_scheduled<-seq(from = 0.2, to = 1, by = 0.2) # here is where you list the information fraction (e.g. here 50%, 75% and 100% information)
+analyses_scheduled<-seq(from = 0.2, to = 1, by = 0.2) # here is where you list the information fraction (e.g. 50%, 75% and 100% information)
 efficacy_thresholds<-numeric(nLooks)
 
 design <- getDesignGroupSequential(sided=1, alpha=0.05, informationRates=analyses_scheduled, typeOfDesign = "P")
@@ -168,34 +169,47 @@ df_stopped_interim <- df_long %>%
   filter(row_number() <= first_success_index) %>%
   ungroup()
 
+#find the ORs for each look, which will result in a significant p-value
+#this will depend on the stopping rule
 df_critical_or <- df_stopped_interim %>% 
   filter(overall_success == 1) %>% 
   group_by(look, first_success_index) %>% 
-  summarize(critical_or = max(OR)) %>% 
+  summarize(OR = max(OR)) %>% 
   ungroup() %>% 
-  filter(as.numeric(look) == first_success_index)
+  filter(as.numeric(look) == first_success_index) %>%
+  select(OR)
 
-df_critical_or <- tibble(OR = df_critical_or$critical_or, nPat = c(200, 400, 600, 800, 100))
+df_critical_or <- tibble(OR = df_critical_or$OR, nPat = analyses_nPatients)
+
+
 
 #data viz  
 
 df_stopped_interim %>%
-  filter(trial > 800) %>%
-  ggplot(aes(nPat, OR, group = trial, color = overall_success)) +
-  geom_point() +
-  geom_line() +
-  scale_color_manual(values = c("black", "red")) +
+  filter(overall_success == 0, trial < 100) %>%
+  ggplot() +
+  geom_point(aes(x = nPat, y = OR, group = trial), color = "black") +
+  geom_line(aes(x = nPat, y = OR, group = trial), color = "black") +
+  geom_point(data = df_stopped_interim %>% filter(overall_success == 1, trial < 1000), aes(x = nPat, y = OR, group = trial), color = "red") +
+  geom_line(data = df_stopped_interim %>% filter(overall_success == 1, trial < 1000), aes(x = nPat, y = OR, group = trial), color = "red") +
+  geom_line(data = df_critical_or, aes(x = nPat, y = OR), color = "blue", linewidth = 1, linetype = "dashed") +
   theme(legend.position = "bottom") +
-  ylim(0, 2) +
+  #ylim(0, 2) +
   ggtitle(paste("Design : ", design$typeOfDesign, ", event-rate = ", death0, "\nStopped at interim", sep = ""))
 
 
 df_long %>%
-  #filter(overall_success == 1) %>%
-  ggplot(aes(nPat, OR, group = trial, color = overall_success)) +
-  geom_point() +
-  geom_line() +
-  scale_color_manual(values = c("black", "red")) +
+  filter(overall_success == 0, trial < 100) %>%
+  ggplot() +
+  geom_point(aes(x = nPat, y = OR, group = trial), color = "black") +
+  geom_line(aes(x = nPat, y = OR, group = trial), color = "black") +
+  geom_point(data = df_long %>% filter(overall_success == 1, trial < 1000), aes(x = nPat, y = OR, group = trial), color = "red") +
+  geom_line(data = df_long %>% filter(overall_success == 1, trial < 1000), aes(x = nPat, y = OR, group = trial), color = "red") +
+  geom_line(data = df_critical_or, aes(x = nPat, y = OR), color = "blue", linewidth = 1, linetype = "dashed") +
   theme(legend.position = "bottom") +
-  ggtitle(design$typeOfDesign)
+  ggtitle(paste("Design : ", design$typeOfDesign, ", event-rate = ", death0, "\nNot stopped at interim", sep = ""))
 
+#pvalue distribution
+
+hist(c(pvalue$pvalue_1, pvalue$pvalue_2, pvalue$pvalue_3, pvalue$pvalue_4, pvalue$pvalue_5))
+hist(pvalue$pvalue_5)
