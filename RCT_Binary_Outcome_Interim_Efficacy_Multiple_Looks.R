@@ -36,7 +36,7 @@ efficacy_thresholds
 #efficacy_thresholds <- rep(0.05, 5)
 
 # Simulation Parameters
-nSims <- 1000
+nSims <- 100
 trialnum <- numeric(nSims)
 or <- data.frame(matrix(ncol = nLooks, nrow = nSims))
 lcl <- data.frame(matrix(ncol = nLooks, nrow = nSims))
