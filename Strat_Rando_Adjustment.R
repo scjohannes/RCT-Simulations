@@ -3,11 +3,10 @@
 
 library(tidyverse)
 
-# Here we will specify the basics
 
-nSims <- 200 # Number of Simulation
+nSims <- 1e3 # Number of Simulation
 intercept <- 3 # intercept of outcome (ie, no treatment, predicitive variable not present)
-beta_treat1 <- 1 # effect of treatment on outcome
+beta_treat1 <- 0 # effect of treatment on outcome
 beta_strat <- 3 # effect of stratification factor (predictive variable) on outcome
 lambda0 <- 100 #expected number of people in stratum without predictive variable
 lambda1 <- 100 #expected number of people in stratum with predictive variable
@@ -32,6 +31,8 @@ nPatients <- numeric()
 strat <- numeric()
 mean_Y0 <- numeric(nSims)
 mean_Y1 <- numeric(nSims)
+obs_effect <- numeric(nSims)
+pvalue <- numeric(nSims)
 
 set.seed(1)
 
@@ -66,10 +67,25 @@ for (i in 1:nSims){
   trialdat_strat <- tibble(outcome, treatment)
   
   mean_Y0[i] <- (trialdat_strat %>% group_by(treatment) %>% summarize(mean = mean(outcome)) %>% pull())[1]
-  mean_Y1[i] <- (trialdat_strat %>% group_by(treatment) %>% summarize(mean = mean(outcome)) %>% pull())[2] 
+  mean_Y1[i] <- (trialdat_strat %>% group_by(treatment) %>% summarize(mean = mean(outcome)) %>% pull())[2]
+  
+  obs_effect[i] <- mean_Y1[i] - mean_Y0[i]
+  
+  t <- t.test((trialdat_strat %>% filter(treatment == 1))$outcome, (trialdat_strat %>% filter(treatment == 0))$outcome, var.equal = FALSE, alternative = "greater")
+  pvalue[i] <- t$p.value
+  
   
 }
-  
+
+effect_size_strat <- obs_effect
+hist(effect_size_strat)
+
+var_strat_effect <- var(obs_effect) #variance in effect estimate distribution is smaller in stratified randomization
+var_strat_effect
+
+pvalues_strat <- pvalue
+mean(pvalues_strat <= 0.05)
+hist(pvalues_strat) #pvalues are no longer uniformly distributed --> model misspecified
 
 plot_strat <- tibble(mean_Y0, mean_Y1) %>% 
   ggplot(aes(x = mean_Y1, y = mean_Y0)) +
@@ -78,7 +94,7 @@ plot_strat <- tibble(mean_Y0, mean_Y1) %>%
 
 plot_strat
 
-rm(mean_Y0, mean_Y1) #remove unused variables
+rm(mean_Y0, mean_Y1, nPatients_strat0, nPatients_strat1, nPatients, strat, obs_effect, pvalue) #remove unused variables
   
 
 
@@ -89,6 +105,8 @@ nPatients <- numeric()
 strat <- numeric()
 mean_Y0 <- numeric(nSims)
 mean_Y1 <- numeric(nSims)
+obs_effect <- numeric(nSims)
+pvalue <- numeric(nSims)
 
 set.seed(1) # this sets the random seed for your results to be reproducible
 
@@ -128,14 +146,29 @@ for (i in 1:nSims){
   mean_Y0[i] <- (trialdat_non_strat %>% group_by(treatment) %>% summarize(mean = mean(outcome)) %>% pull())[1]
   mean_Y1[i] <- (trialdat_non_strat %>% group_by(treatment) %>% summarize(mean = mean(outcome)) %>% pull())[2] 
   
-  trialdat_non_strat <- tibble(outcome, treatment)
+  obs_effect[i] <- mean_Y1[i] - mean_Y0[i]
+  
+  
+  t <- t.test((trialdat_non_strat %>% filter(treatment == 1))$outcome, (trialdat_non_strat %>% filter(treatment == 0))$outcome, var.equal = FALSE, alternative = "greater")
+  pvalue[i] <- t$p.value
   
 }
+
+effect_size_simple <- obs_effect
+hist(effect_size_simple)
+
+var_simple_effect <- var(obs_effect) #variance in effect estimate distribution is smaller in stratified randomization
+var_simple_effect
+
+pvalues_simple <- pvalue
+mean(pvalues_simple <= 0.05) #expected number of type I errors, if we set effect size to 0
+hist(pvalues_simple)  #p values are uniformely distributed --> model is not misspecified
 
 
 plot_non_strat <- tibble(mean_Y0, mean_Y1) %>% 
   ggplot(aes(x = mean_Y1, y = mean_Y0)) +
   geom_point() +
   ggtitle(paste("Simple Randomization"))
+
 
 plot_non_strat
