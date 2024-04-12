@@ -4,7 +4,7 @@
 library(tidyverse)
 
 
-nSims <- 1e3 # Number of Simulation
+nSims <- 3e3 # Number of simulations
 intercept <- 3 # intercept of outcome (ie, no treatment, predicitive variable not present)
 beta_treat1 <- 0 # effect of treatment on outcome
 beta_strat <- 3 # effect of stratification factor (predictive variable) on outcome
@@ -32,7 +32,8 @@ strat <- numeric()
 mean_Y0 <- numeric(nSims)
 mean_Y1 <- numeric(nSims)
 obs_effect <- numeric(nSims)
-pvalue <- numeric(nSims)
+pvalue.t <- numeric(nSims)
+pvalue.lm <- numeric(nSims)
 
 set.seed(1)
 
@@ -64,17 +65,19 @@ for (i in 1:nSims){
   error <- rnorm(nPatients) #create a vector of error terms 
   outcome <- outcome + error #add the error terms to the outcome
   
-  trialdat_strat <- tibble(outcome, treatment)
+  trialdat_strat <- tibble(outcome, treatment, strat)
   
   mean_Y0[i] <- (trialdat_strat %>% group_by(treatment) %>% summarize(mean = mean(outcome)) %>% pull())[1]
   mean_Y1[i] <- (trialdat_strat %>% group_by(treatment) %>% summarize(mean = mean(outcome)) %>% pull())[2]
   
-  obs_effect[i] <- mean_Y1[i] - mean_Y0[i]
+  obs_effect[i] <- mean_Y1[i] - mean_Y0[i] #calculate absolute effect size
   
-  t <- t.test((trialdat_strat %>% filter(treatment == 1))$outcome, (trialdat_strat %>% filter(treatment == 0))$outcome, var.equal = FALSE, alternative = "greater")
-  pvalue[i] <- t$p.value
+  #hypothesis test using Welchs t-test (not assum equal variance between groups)
+  t <- t.test((trialdat_strat %>% filter(treatment == 0))$outcome, (trialdat_strat %>% filter(treatment == 1))$outcome, var.equal = FALSE, alternative = "greater")
+  pvalue.t[i] <- t$p.value 
   
-  
+  m <- lm(outcome ~ treatment + strat, data = trialdat_strat)
+  pvalue.lm[i] <- summary(m)$coefficient[11] #pull p values for treatment
 }
 
 effect_size_strat <- obs_effect
@@ -83,9 +86,13 @@ hist(effect_size_strat)
 var_strat_effect <- var(obs_effect) #variance in effect estimate distribution is smaller in stratified randomization
 var_strat_effect
 
-pvalues_strat <- pvalue
-mean(pvalues_strat <= 0.05)
-hist(pvalues_strat) #pvalues are no longer uniformly distributed --> model misspecified
+pvalues_strat.t <- pvalue.t
+mean(pvalues_strat.t <= 0.05)
+hist(pvalues_strat.t) #pvalues are not  uniformly distributed --> model misspecified
+
+pvalues_strat.lm <- pvalue.lm
+mean(pvalues_strat.lm <= 0.05) #including the stratum in the linear model (remember t.test is a linear model) makes distribution uniform again
+hist(pvalues_strat.lm)
 
 plot_strat <- tibble(mean_Y0, mean_Y1) %>% 
   ggplot(aes(x = mean_Y1, y = mean_Y0)) +
@@ -94,7 +101,7 @@ plot_strat <- tibble(mean_Y0, mean_Y1) %>%
 
 plot_strat
 
-rm(mean_Y0, mean_Y1, nPatients_strat0, nPatients_strat1, nPatients, strat, obs_effect, pvalue) #remove unused variables
+rm(mean_Y0, mean_Y1, nPatients_strat0, nPatients_strat1, nPatients, strat, obs_effect, pvalue.t, pvalue.lm) #remove unused variables
   
 
 
