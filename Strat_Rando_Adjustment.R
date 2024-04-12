@@ -3,10 +3,10 @@
 
 library(tidyverse)
 
-nSims <- 3e3 # Number of simulations
+nSims <- 1e3 # Number of simulations
 intercept <- 3 # intercept of outcome (ie, no treatment, predicitive variable not present)
 beta_treat1 <- 0 # effect of treatment on outcome
-beta_strat <- 3 # effect of stratification factor (predictive variable) on outcome
+beta_strat <- 2 # effect of stratification factor (predictive variable) on outcome
 lambda0 <- 100 #expected number of people in stratum without predictive variable
 lambda1 <- 100 #expected number of people in stratum with predictive variable
 
@@ -72,14 +72,15 @@ for (i in 1:nSims){
   obs_effect[i] <- mean_Y1[i] - mean_Y0[i] #calculate absolute effect size
   
   #hypothesis test using Welchs t-test (not assum equal variance between groups)
-  t <- t.test((trialdat_strat %>% filter(treatment == 0))$outcome, 
-              (trialdat_strat %>% filter(treatment == 1))$outcome, 
+  t <- t.test((trialdat_strat %>% filter(treatment == 1))$outcome, 
+              (trialdat_strat %>% filter(treatment == 0))$outcome, 
               var.equal = FALSE, alternative = "greater")
   
   pvalue.t[i] <- t$p.value 
   
   m <- lm(outcome ~ treatment + strat, data = trialdat_strat)
-  pvalue.lm[i] <- summary(m)$coefficient[11] #pull p values for treatment
+  pvalue.lm[i] <- pt(as.numeric(summary(m)$coefficient[8]), m$df.residual, lower = FALSE) 
+  #NOTE: p-values for lm are calculated as two sided, here we are looking at a one sided test, that's why we manually compute the pvalue from t
 }
 
 effect_size_strat <- obs_effect
@@ -95,6 +96,8 @@ hist(pvalues_strat.t) #pvalues are not  uniformly distributed under the null -->
 pvalues_strat.lm <- pvalue.lm
 mean(pvalues_strat.lm <= 0.05) #including the stratum in the linear model (remember t.test is a linear model) makes distribution uniform again
 hist(pvalues_strat.lm)
+# if you compare the pvalue distribution from the linear model which has been adjusted for baseline covariate, you'll note that we have more power
+# if you compare against t.test (both stratified and simple), eg, for effect size of 0.1
 
 plot_strat <- tibble(mean_Y0, mean_Y1) %>% 
   ggplot(aes(x = mean_Y1, y = mean_Y0)) +
