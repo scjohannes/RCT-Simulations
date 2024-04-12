@@ -9,11 +9,11 @@ nSims <- 200 # Number of Simulation
 intercept <- 3 # intercept of outcome (ie, no treatment, predicitive variable not present)
 beta_treat1 <- 1 # effect of treatment on outcome
 beta_strat <- 3 # effect of stratification factor (predictive variable) on outcome
-lambda0 <- 200 #expected number of people in stratum without predictive variable
+lambda0 <- 100 #expected number of people in stratum without predictive variable
 lambda1 <- 100 #expected number of people in stratum with predictive variable
 
-# NOTE: stratification will only cause correlation if the strata are not of equal size.
-# if exactly 50% of the people have or haven't the predictive factor, then this will not result in a correlation
+# NOTE: stratification will only cause correlation if the strata are not always perfectly of equal size
+# if always exactly 50% of the people have or haven't the predictive factor, then this will not result in a correlation
 # That's why we vary the number of patients in each stratum for every iteration of the simulation by drawing from a poisson distribution
 
 #NOTE: this is for a continuous outcome. I assume this would work similarly for a binary outcome, on a logodds scale
