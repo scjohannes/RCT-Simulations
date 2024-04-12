@@ -3,7 +3,6 @@
 
 library(tidyverse)
 
-
 nSims <- 3e3 # Number of simulations
 intercept <- 3 # intercept of outcome (ie, no treatment, predicitive variable not present)
 beta_treat1 <- 0 # effect of treatment on outcome
@@ -60,10 +59,10 @@ for (i in 1:nSims){
   
   
   outcome <- numeric(nPatients) # this creates an empty vector which we will use to assign the outcome for each patient
-  outcome <- intercept + beta_treat1*treatment + beta_strat * strat  # this assigns the probability of death for patients receiving 'treatment 0' 
+  outcome <- intercept + beta_treat1*treatment + beta_strat * strat  #create the outcome for each patient
   
-  error <- rnorm(nPatients) #create a vector of error terms 
-  outcome <- outcome + error #add the error terms to the outcome
+  error <- rnorm(nPatients) #create a vector of errors 
+  outcome <- outcome + error #add the errors to the outcome
   
   trialdat_strat <- tibble(outcome, treatment, strat)
   
@@ -73,7 +72,10 @@ for (i in 1:nSims){
   obs_effect[i] <- mean_Y1[i] - mean_Y0[i] #calculate absolute effect size
   
   #hypothesis test using Welchs t-test (not assum equal variance between groups)
-  t <- t.test((trialdat_strat %>% filter(treatment == 0))$outcome, (trialdat_strat %>% filter(treatment == 1))$outcome, var.equal = FALSE, alternative = "greater")
+  t <- t.test((trialdat_strat %>% filter(treatment == 0))$outcome, 
+              (trialdat_strat %>% filter(treatment == 1))$outcome, 
+              var.equal = FALSE, alternative = "greater")
+  
   pvalue.t[i] <- t$p.value 
   
   m <- lm(outcome ~ treatment + strat, data = trialdat_strat)
@@ -88,7 +90,7 @@ var_strat_effect
 
 pvalues_strat.t <- pvalue.t
 mean(pvalues_strat.t <= 0.05)
-hist(pvalues_strat.t) #pvalues are not  uniformly distributed --> model misspecified
+hist(pvalues_strat.t) #pvalues are not  uniformly distributed under the null --> model misspecified
 
 pvalues_strat.lm <- pvalue.lm
 mean(pvalues_strat.lm <= 0.05) #including the stratum in the linear model (remember t.test is a linear model) makes distribution uniform again
@@ -101,7 +103,8 @@ plot_strat <- tibble(mean_Y0, mean_Y1) %>%
 
 plot_strat
 
-rm(mean_Y0, mean_Y1, nPatients_strat0, nPatients_strat1, nPatients, strat, obs_effect, pvalue.t, pvalue.lm) #remove unused variables
+rm(mean_Y0, mean_Y1, nPatients_strat0, nPatients_strat1, nPatients, strat, 
+   obs_effect, pvalue.t, pvalue.lm) #remove unused variables
   
 
 
@@ -142,11 +145,11 @@ for (i in 1:nSims){
   
   
   outcome <- numeric(nPatients) # this creates an empty vector which we will use to assign the outcome for each patient
-  outcome <- intercept + beta_treat1*treatment + beta_strat * strat  # this assigns the probability of death for patients receiving 'treatment 0' 
+  outcome <- intercept + beta_treat1*treatment + beta_strat * strat 
   
   
-  error <- rnorm(nPatients) #create a vector of error terms 
-  outcome <- outcome + error #add the error terms to the outcome
+  error <- rnorm(nPatients)
+  outcome <- outcome + error
   
   trialdat_non_strat <- tibble(outcome, treatment)
   
@@ -156,7 +159,9 @@ for (i in 1:nSims){
   obs_effect[i] <- mean_Y1[i] - mean_Y0[i]
   
   
-  t <- t.test((trialdat_non_strat %>% filter(treatment == 1))$outcome, (trialdat_non_strat %>% filter(treatment == 0))$outcome, var.equal = FALSE, alternative = "greater")
+  t <- t.test((trialdat_non_strat %>% filter(treatment == 1))$outcome, 
+              (trialdat_non_strat %>% filter(treatment == 0))$outcome, 
+              var.equal = FALSE, alternative = "greater")
   pvalue[i] <- t$p.value
   
 }
@@ -168,14 +173,13 @@ var_simple_effect <- var(obs_effect) #variance in effect estimate distribution i
 var_simple_effect
 
 pvalues_simple <- pvalue
-mean(pvalues_simple <= 0.05) #expected number of type I errors, if we set effect size to 0
-hist(pvalues_simple)  #p values are uniformely distributed --> model is not misspecified
+mean(pvalues_simple <= 0.05) #expected number of type I errors under the nulll
+hist(pvalues_simple)  #p values are uniformly distributed under the null --> model is not misspecified
 
 
 plot_non_strat <- tibble(mean_Y0, mean_Y1) %>% 
   ggplot(aes(x = mean_Y1, y = mean_Y0)) +
   geom_point() +
   ggtitle(paste("Simple Randomization"))
-
 
 plot_non_strat
