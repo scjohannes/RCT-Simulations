@@ -114,8 +114,8 @@ for (i in 1:nSims){
   outcome <- intercept + beta_treat1*treatment + beta_strat * strat  # this assigns the probability of death for patients receiving 'treatment 0' 
   
   
-  error <- rnorm(nPatients )
-  outcome <- outcome + error
+  error <- rnorm(nPatients) #create a vector of error terms 
+  outcome <- outcome + error #add the error terms to the outcome
   
   trialdat_non_strat <- tibble(outcome, treatment)
   
