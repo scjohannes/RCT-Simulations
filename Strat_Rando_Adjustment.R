@@ -154,7 +154,7 @@ for (i in 1:nSims){
   error <- rnorm(nPatients)
   outcome <- outcome + error
   
-  trialdat_non_strat <- tibble(outcome, treatment)
+  trialdat_non_strat <- tibble(outcome, treatment, strat)
   
   mean_Y0[i] <- (trialdat_non_strat %>% group_by(treatment) %>% summarize(mean = mean(outcome)) %>% pull())[1]
   mean_Y1[i] <- (trialdat_non_strat %>% group_by(treatment) %>% summarize(mean = mean(outcome)) %>% pull())[2] 
