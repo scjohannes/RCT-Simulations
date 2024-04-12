@@ -67,7 +67,8 @@ for (i in 1:nSims){
 
 plot_strat <- tibble(mean_Y0, mean_Y1) %>% 
   ggplot(aes(x = mean_Y1, y = mean_Y0)) +
-  geom_point()
+  geom_point() +
+  ggtitle(paste("Stratified Randomisation"))
 
 plot_strat
 
@@ -128,5 +129,7 @@ for (i in 1:nSims){
 
 plot_non_strat <- tibble(mean_Y0, mean_Y1) %>% 
   ggplot(aes(x = mean_Y1, y = mean_Y0)) +
-  geom_point()
+  geom_point() +
+  ggtitle(paste("Simple Randomization"))
+
 plot_non_strat
