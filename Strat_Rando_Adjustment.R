@@ -16,6 +16,12 @@ lambda1 <- 100 #expected number of people in stratum with predictive variable
 # if always exactly 50% of the people have or haven't the predictive factor, then this will not result in a correlation
 # That's why we vary the number of patients in each stratum for every iteration of the simulation by drawing from a poisson distribution
 
+# Explanation in my own words:
+# mean_Y1 and mean_Y0 are correlated, because the prognostic factor is always perfectly balanced if we stratify.
+# If by chance overall slightly more people have the prognostic factor (which creates a higher Y), then both Y0 and Y1 will be higher, and vice versa
+# In case of simple randomisation, when overall more people have the prognostic factors, some more of then end up in treatment == 1, some more in treatment == 0, 
+# and overall this cancels out and we don't observe a correlation.
+
 #NOTE: this is for a continuous outcome. I assume this would work similarly for a binary outcome, on a logodds scale
 
 # Stratified randomization ------------------------------------------------
