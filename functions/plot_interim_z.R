@@ -1,4 +1,6 @@
-plot_interim_z <- function(data_trials, data_crit_z, filter_trial = NULL, x_breaks = NULL, title_suffix = "", ylim_range = NULL) {
+library(tidyverse)
+
+plot_interim_z <- function(data_trials, data_crit_z, filter_trial = NULL, x_breaks = NULL, design = design$typeOfDesign, event_rate = death0, title_suffix = "", ylim_range = NULL) {
   p <- data_trials %>%
     {if (!is.null(filter_trial)) filter(., trial == filter_trial) else .} %>%
     ggplot() +
@@ -8,7 +10,7 @@ plot_interim_z <- function(data_trials, data_crit_z, filter_trial = NULL, x_brea
     {if(!is.null(x_breaks)) scale_x_continuous(breaks = round(x_breaks)) else NULL} +
     theme(legend.position = "bottom") +
     {if(!is.null(ylim_range)) ylim(ylim_range) else NULL} +
-    ggtitle(paste("Design : ", design$typeOfDesign, ", event-rate = ", death0, "\n", title_suffix, sep = ""))
+    ggtitle(paste("Design : ", design, ", event-rate = ", event_rate, "\n", title_suffix, sep = ""))
   
   return(p)
 }
