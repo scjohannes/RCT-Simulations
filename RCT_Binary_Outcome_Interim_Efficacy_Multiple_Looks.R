@@ -1,37 +1,12 @@
 library(rpact)
 library(tidyverse)
 library(glue)
-library(ggokabeito)
-
-options(
-  # set default colors in ggplot2 to colorblind-friendly
-  # Okabe-Ito and Viridis palettes
-  ggplot2.discrete.colour = ggokabeito::palette_okabe_ito(),
-  ggplot2.discrete.fill = ggokabeito::palette_okabe_ito(),
-  ggplot2.continuous.colour = "viridis",
-  ggplot2.continuous.fill = "viridis",
-  # set theme font and size
-  book.base_family = "sans",
-  book.base_size = 14
-)
-
-# set default theme
-theme_set(
-  theme_minimal(
-    base_size = getOption("book.base_size"),
-    base_family = getOption("book.base_family")
-  ) %+replace%
-    theme(
-      panel.grid.minor = element_blank(),
-      legend.position = "bottom"
-    )
-)
 
 # Trial Design Parameters - Part 1
 # Here we will specify the basics: maximum total number of patients to enroll and event rate for each treatment arm
 nPatients <- 1000 # here is where you specify the planned max number of patients you want included in each RCT 
 death0 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 0' in these trials
-death1 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
+death1 <- 0.35 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
 # I have set this one up to test the power for a treatment that would reduce mortality from 40% in control group (0) to 30% in treatment group (1)
 # If one wants to estimate the "type 1 error" under different interim approaches, simply make 'death0' and 'death1' the same (no treatment effect)
 
@@ -170,7 +145,6 @@ simulation_results <- simulation_results %>%
 #table(simulation_results$success_5, overall_success)
 
 
-rm(j, i)
 # Data wrangling / conversion to long format ------------------------------
 # Custom function to convert to long format
 convert_to_long <- function(data, prefix) {
@@ -220,31 +194,5 @@ df_stopped_interim <- df_long %>%
 #create table with the critical z values
 df_critical_z <- tibble(zvalue = qnorm(efficacy_thresholds/2), nPat = analyses_nPatients)
 
-# Plotting ------------------------------------------------------------
-## Load custom functions ----
-source("functions/plot_interim_or.R")
-source("functions/plot_interim_z.R")
-
-## Plot ORs ----
-#stopped at interim
-plot1 <- plot_interim_or(data = df_stopped_interim, true_effect = trueOR, x_breaks = analyses_nPatients, title_suffix = "Stopped at interim")
-#not stopped at interim
-plot2 <- plot_interim_or(data = df_long, true_effect = trueOR, x_breaks = analyses_nPatients, title_suffix = "Not stopped at interim")
-
-plot1
-plot2
-
-## Plotting z values -------------------------------------------------------
-
-plot3 <- plot_interim_z(data = df_stopped_interim, data_crit_z = df_critical_z, x_breaks = analyses_nPatients, title_suffix = "Stopped at interim")
-plot4 <- plot_interim_z(data = df_long, data_crit_z = df_critical_z, x_breaks = analyses_nPatients, title_suffix = "Not stopped at interim")
-
-plot3
-plot4
-# Histograms for various statistics ---------------------------------------
-
-#Histogram of ORs according to look (and therefore increase in sample size per look)
-#or_long %>% ggplot(aes(x = or)) + geom_histogram(binwidth = 0.1) + facet_wrap(~look, ncol = 2)
-
-#Histogram of zvalues according to look (and therefore increase in sample size per look)
-#zvalue_long %>% ggplot(aes(x = zvalue)) + geom_histogram(binwidth = 0.5) + facet_wrap(~look, ncol = 2)
+#remove no longer needed objects
+rm(i, j, death, deathprob, efficacy_thresholds, pid, treatment, trialnum, overall_success, lcl, model, new_columns, or, or_long, overall_success_long, pvalue, pvalue_long, success, simulation_results, success_long, trialdata, ucl, zvalue, zvalue_long)
