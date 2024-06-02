@@ -1,30 +1,58 @@
+library(rpact)
+library(tidyverse)
+library(glue)
+library(ggokabeito)
+
+options(
+  # set default colors in ggplot2 to colorblind-friendly
+  # Okabe-Ito and Viridis palettes
+  ggplot2.discrete.colour = ggokabeito::palette_okabe_ito(),
+  ggplot2.discrete.fill = ggokabeito::palette_okabe_ito(),
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis",
+  # set theme font and size
+  book.base_family = "sans",
+  book.base_size = 14
+)
+
+# set default theme
+theme_set(
+  theme_minimal(
+    base_size = getOption("book.base_size"),
+    base_family = getOption("book.base_family")
+  ) %+replace%
+    theme(
+      panel.grid.minor = element_blank(),
+      legend.position = "bottom"
+    )
+)
+
 # Trial Design Parameters - Part 1
 # Here we will specify the basics: maximum total number of patients to enroll and event rate for each treatment arm
 nPatients <- 1000 # here is where you specify the planned max number of patients you want included in each RCT 
 death0 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 0' in these trials
-death1 <- 0.3 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
+death1 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
 # I have set this one up to test the power for a treatment that would reduce mortality from 40% in control group (0) to 30% in treatment group (1)
 # If one wants to estimate the "type 1 error" under different interim approaches, simply make 'death0' and 'death1' the same (no treatment effect)
+
+trueOR <- (death1/(1-death1))/(death0/(1-death0))
 
 # Trial Design Parameters - Part 2
 # Here we will define the interim analysis strategy and stopping rules
 # For this trial we will include provisions for efficacy stopping only (no futility stopping boundaries)
 # We will use the rpact package to compute the stopping/success thresholds at interim and final analysis 
 # install.packages("rpact")
-library(rpact)
-library(tidyverse)
-
-theme_set(theme_light())
 
 nLooks<-5 # here is where you put the number of looks that will take place (INCLUDING the final analysis)
-analyses_scheduled<-seq(from = 0.2, to = 1, by = 0.2) # here is where you list the information fraction (e.g. 50%, 75% and 100% information)
-efficacy_thresholds<-numeric(nLooks)
+analyses_scheduled <- seq(from = 1/nLooks, to = 1, by = 1/nLooks) # here is where you list the information fraction (e.g. 50%, 75% and 100% information)
+efficacy_thresholds <- numeric(nLooks)
 
-design <- getDesignGroupSequential(sided=1, alpha=0.05, informationRates=analyses_scheduled, typeOfDesign = "OF")
+design <- getDesignGroupSequential(sided=1, alpha=0.05, informationRates=analyses_scheduled, typeOfDesign = "asOF")
 
-for(j in 1:nLooks){
+for(j in 1:nLooks){ #get the alpha for each look
 efficacy_thresholds[j] = design$stageLevels[j]
 }
+
 analyses_nPatients <- analyses_scheduled*nPatients
 
 analyses_scheduled
@@ -36,7 +64,7 @@ efficacy_thresholds
 #efficacy_thresholds <- rep(0.05, 5)
 
 # Simulation Parameters
-nSims <- 100
+nSims <- 20
 trialnum <- numeric(nSims)
 or <- data.frame(matrix(ncol = nLooks, nrow = nSims))
 lcl <- data.frame(matrix(ncol = nLooks, nrow = nSims))
@@ -107,24 +135,42 @@ for(i in 1:nSims) {
   
 }
 
-simulation_results <- data.frame(cbind(trialnum,
-or[1], lcl[1], ucl[1], zvalue[1], pvalue[1], success[1],
-or[2], lcl[2], ucl[2], zvalue[1], pvalue[2], success[2],
-or[3], lcl[3], ucl[3], zvalue[1], pvalue[3], success[3],
-or[4], lcl[4], ucl[4], zvalue[1], pvalue[4], success[4],
-or[5], lcl[5], ucl[5], zvalue[1], pvalue[5], success[5],
-overall_success))
-head(simulation_results, n=10)
+#Build dataframe (wide format)
+simulation_results <- tibble(trialnum)
 
-table(overall_success)
-table(simulation_results$success_1, overall_success)
-table(simulation_results$success_2, overall_success)
-table(simulation_results$success_3, overall_success)
-table(simulation_results$success_4, overall_success)
-table(simulation_results$success_5, overall_success)
+for(i in 1:nLooks){
+  new_columns <- tibble(
+    or[i],
+    lcl[i],
+    ucl[i],
+    zvalue[i],
+    pvalue[i],
+    success[i]
+  )
+  
+  simulation_results <- bind_cols(simulation_results, new_columns)
+}
+
+simulation_results <- bind_cols(simulation_results, tibble(overall_success))
+
+simulation_results <- simulation_results %>%
+  mutate("or_{i}" := or[i],
+         "lcl_{i}" := lcl[i],
+         "ucl_{i}" := ucl[i],
+         "zvalue_{i}" := zvalue[i],
+         "pvalue_{i}" := pvalue[i],
+         "sucess_{i}" := success[i]
+  )
+
+#table(overall_success)
+#table(simulation_results$success_1, overall_success)
+#table(simulation_results$success_2, overall_success)
+#table(simulation_results$success_3, overall_success)
+#table(simulation_results$success_4, overall_success)
+#table(simulation_results$success_5, overall_success)
 
 
-
+rm(j, i)
 # Data wrangling / conversion to long format ------------------------------
 # Custom function to convert to long format
 convert_to_long <- function(data, prefix) {
@@ -150,102 +196,55 @@ overall_success_long <- tibble(overall_success = as.factor(rep(overall_success, 
 df_long <- right_join(or_long, zvalue_long)
 df_long <- right_join(df_long, pvalue_long)
 df_long <- right_join(df_long, success_long)
+df_long <- df_long %>% bind_cols(overall_success_long)
+df_long <- df_long %>% bind_cols(tibble(nPat = rep(NA, nLooks*nSims)))
 
-df_long <- df_long %>% 
-  bind_cols(overall_success_long) %>%
-  mutate(
-    nPat = case_when(
-      look == 1 ~ 200, 
-      look == 2 ~ 400,
-      look == 3 ~ 600, 
-      look == 4 ~ 800,
-      look == 5 ~ 1000))
+for(i in 1:nLooks){
+   df_long <- df_long %>%
+    mutate(
+      nPat = case_when(
+        look == i ~ analyses_nPatients[i], 
+        look != i ~ nPat
+        )
+      )
+}
 
-
-#create dataframe which simulates trial stop at sif interim results
+#create dataframe which simulates trial stop if interim results sign
 df_stopped_interim <- df_long %>%
   group_by(trial) %>%
   mutate(first_success_index = min(which(success == 1))) %>%
-  mutate(first_success_index = ifelse(first_success_index == Inf, 5, first_success_index))  %>%
+  mutate(first_success_index = ifelse(first_success_index == Inf, nLooks, first_success_index))  %>%
   filter(row_number() <= first_success_index) %>%
   ungroup()
 
 #create table with the critical z values
 df_critical_z <- tibble(zvalue = qnorm(efficacy_thresholds/2), nPat = analyses_nPatients)
 
-# Plotting ORs ------------------------------------------------------------
-Patrestr <- 100
+# Plotting ------------------------------------------------------------
+## Load custom functions ----
+source("functions/plot_interim_or.R")
+source("functions/plot_interim_z.R")
 
-#just one trial
-df_stopped_interim %>%
-  filter(overall_success == 0, trial == 2) %>%
-  ggplot() +
-  geom_point(aes(x = nPat, y = or, group = trial), color = "black") +
-  geom_line(aes(x = nPat, y = or, group = trial), color = "black") +
-  geom_point(data = df_stopped_interim %>% filter(overall_success == 1, trial == 2), aes(x = nPat, y = or, group = trial), color = "red") +
-  geom_line(data = df_stopped_interim %>% filter(overall_success == 1, trial == 2), aes(x = nPat, y = or, group = trial), color = "red") +
-  theme(legend.position = "bottom") +
-  ylim(0, 2) +
-  ggtitle(paste("Design : ", design$typeOfDesign, ", event-rate = ", death0, "\nStopped at interim", sep = ""))
+## Plot ORs ----
+#stopped at interim
+plot1 <- plot_interim_or(data = df_stopped_interim, true_effect = trueOR, x_breaks = analyses_nPatients, title_suffix = "Stopped at interim")
+#not stopped at interim
+plot2 <- plot_interim_or(data = df_long, true_effect = trueOR, x_breaks = analyses_nPatients, title_suffix = "Not stopped at interim")
 
-#trial stopped at interim
-df_stopped_interim %>%
-  filter(overall_success == 0, trial < Patrestr) %>%
-  ggplot() +
-  geom_point(aes(x = nPat, y = or, group = trial), color = "black") +
-  geom_line(aes(x = nPat, y = or, group = trial), color = "black") +
-  geom_point(data = df_stopped_interim %>% filter(overall_success == 1, trial < Patrestr), aes(x = nPat, y = or, group = trial), color = "red") +
-  geom_line(data = df_stopped_interim %>% filter(overall_success == 1, trial < Patrestr), aes(x = nPat, y = or, group = trial), color = "red") +
-  theme(legend.position = "bottom") +
-  #ylim(0, 2) +
-  ggtitle(paste("Design : ", design$typeOfDesign, ", event-rate = ", death0, "\nStopped at interim", sep = ""))
+plot1
+plot2
 
-#trial not stopped at interim
-df_long %>%
-  filter(overall_success == 0, trial < Patrestr) %>%
-  ggplot() +
-  geom_point(aes(x = nPat, y = or, group = trial), color = "black") +
-  geom_line(aes(x = nPat, y = or, group = trial), color = "black") +
-  geom_point(data = df_long %>% filter(overall_success == 1, trial < Patrestr), aes(x = nPat, y = or, group = trial), color = "red") +
-  geom_line(data = df_long %>% filter(overall_success == 1, trial < Patrestr), aes(x = nPat, y = or, group = trial), color = "red") +
-  theme(legend.position = "bottom") +
-  ggtitle(paste("Design : ", design$typeOfDesign, ", event-rate = ", death0, "\nNot stopped at interim", sep = ""))
+## Plotting z values -------------------------------------------------------
 
+plot3 <- plot_interim_z(data = df_stopped_interim, data_crit_z = df_critical_z, x_breaks = analyses_nPatients, title_suffix = "Stopped at interim")
+plot4 <- plot_interim_z(data = df_long, data_crit_z = df_critical_z, x_breaks = analyses_nPatients, title_suffix = "Not stopped at interim")
 
-
-# Plotting z values -------------------------------------------------------
-#trial stopped at interim
-df_stopped_interim %>%
-  filter(overall_success == 0, trial < Patrestr) %>%
-  ggplot() +
-  geom_point(aes(x = nPat, y = zvalue, group = trial), color = "black") +
-  geom_line(aes(x = nPat, y = zvalue, group = trial), color = "black") +
-  geom_point(data = df_stopped_interim %>% filter(overall_success == 1, trial < Patrestr), aes(x = nPat, y = zvalue, group = trial), color = "red") +
-  geom_line(data = df_stopped_interim %>% filter(overall_success == 1, trial < Patrestr), aes(x = nPat, y = zvalue, group = trial), color = "red") +
-  #the line below indicated the critical z values
-  geom_line(data = df_critical_z, aes(x = nPat, y = zvalue), color = "blue", linewidth = 1, linetype = "dashed") +
-  theme(legend.position = "bottom") +
-  ylim(-6, 3) +
-  ggtitle(paste("Design : ", design$typeOfDesign, ", event-rate = ", death0, "\nStopped at interim", sep = ""))
-
-#trial not stopped at interim
-df_long %>%
-  filter(overall_success == 0, trial < Patrestr) %>%
-  ggplot() +
-  geom_point(aes(x = nPat, y = zvalue, group = trial), color = "black") +
-  geom_line(aes(x = nPat, y = zvalue, group = trial), color = "black") +
-  geom_point(data = df_long %>% filter(overall_success == 1, trial < Patrestr), aes(x = nPat, y = zvalue, group = trial), color = "red") +
-  geom_line(data = df_long %>% filter(overall_success == 1, trial < Patrestr), aes(x = nPat, y = zvalue, group = trial), color = "red") +
-  geom_line(data = df_critical_z, aes(x = nPat, y = zvalue), color = "blue", linewidth = 1, linetype = "dashed") +
-  theme(legend.position = "bottom") +
-  ylim(-6, 3) +
-  ggtitle(paste("Design : ", design$typeOfDesign, ", event-rate = ", death0, "\nStopped at interim", sep = ""))
-
-
+plot3
+plot4
 # Histograms for various statistics ---------------------------------------
 
 #Histogram of ORs according to look (and therefore increase in sample size per look)
-or_long %>% ggplot(aes(x = or)) + geom_histogram(binwidth = 0.1) + facet_wrap(~look, ncol = 2)
+#or_long %>% ggplot(aes(x = or)) + geom_histogram(binwidth = 0.1) + facet_wrap(~look, ncol = 2)
 
 #Histogram of zvalues according to look (and therefore increase in sample size per look)
-zvalue_long %>% ggplot(aes(x = zvalue)) + geom_histogram(binwidth = 0.5) + facet_wrap(~look, ncol = 2)
+#zvalue_long %>% ggplot(aes(x = zvalue)) + geom_histogram(binwidth = 0.5) + facet_wrap(~look, ncol = 2)
