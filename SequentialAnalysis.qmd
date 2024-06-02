@@ -1,0 +1,106 @@
+---
+title: "Sequential Analysis"
+author: "Johannes Schwenke"
+format: revealjs
+editor: visual
+---
+
+## Quarto
+
+```{r Setup}
+#| label: load-packages
+#| include: false
+#| warning: false
+
+library(rpact)
+library(tidyverse)
+library(glue)
+library(ggplot2)
+library(ggokabeito)
+
+
+options(
+  # set default colors in ggplot2 to colorblind-friendly
+  # Okabe-Ito and Viridis palettes
+  ggplot2.discrete.colour = ggokabeito::palette_okabe_ito(),
+  ggplot2.discrete.fill = ggokabeito::palette_okabe_ito(),
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis",
+  # set theme font and size
+  book.base_family = "sans",
+  book.base_size = 14
+)
+
+# set default theme
+theme_set(
+  theme_minimal(
+    base_size = getOption("book.base_size"),
+    base_family = getOption("book.base_family")
+  ) %+replace%
+    theme(
+      panel.grid.minor = element_blank(),
+      legend.position = "bottom"
+    )
+)
+
+## Load simulation ----
+source("RCT_Binary_Outcome_Interim_Efficacy_Multiple_Looks.r")
+
+## Load custom functions ----
+source("functions/plot_interim_or.R")
+source("functions/plot_interim_z.R")
+```
+
+
+Quarto enables you to weave together content and executable code into a finished presentation. To learn more about Quarto presentations see <https://quarto.org/docs/presentations/>.
+
+## Bullets
+
+When you click the **Render** button a document will be generated that includes:
+
+:::{.incremental}
+-   Content authored with markdown
+-   Output from executable code
+:::
+
+## 5 looks with stopping {.smaller .scrollable}
+
+::: panel-tabset
+
+### Plot
+
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 4.5
+
+plot_interim_or(data = df_stopped_interim, true_effect = trueOR, x_breaks = analyses_nPatients, design = design$typeOfDesign, event_rate = death0, title_suffix = "Stopped at interim")
+```
+
+### Data
+
+```{r}
+knitr::kable(df_stopped_interim)
+```
+:::
+
+## 5 looks without stopping {.smaller .scrollable}
+
+::: panel-tabset
+
+### Plot
+
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 4.5
+
+plot_interim_or(data = df_long, true_effect = trueOR, x_breaks = analyses_nPatients, design = design$typeOfDesign, event_rate = death0, title_suffix = "Not stopped at interim")
+```
+
+### Data
+
+```{r}
+knitr::kable(df_stopped_interim)
+```
+:::
