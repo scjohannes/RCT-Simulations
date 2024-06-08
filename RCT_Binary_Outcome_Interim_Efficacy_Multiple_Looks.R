@@ -6,7 +6,7 @@ library(glue)
 # Here we will specify the basics: maximum total number of patients to enroll and event rate for each treatment arm
 nPatients <- 1000 # here is where you specify the planned max number of patients you want included in each RCT 
 death0 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 0' in these trials
-death1 <- 0.35 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
+death1 <- 0.3 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
 # I have set this one up to test the power for a treatment that would reduce mortality from 40% in control group (0) to 30% in treatment group (1)
 # If one wants to estimate the "type 1 error" under different interim approaches, simply make 'death0' and 'death1' the same (no treatment effect)
 
@@ -184,8 +184,12 @@ df_stopped_interim <- df_long %>%
   group_by(trial) %>%
   mutate(first_success_index = min(which(success == 1))) %>%
   mutate(first_success_index = ifelse(first_success_index == Inf, nLooks, first_success_index))  %>%
-  filter(row_number() <= first_success_index) %>%
-  ungroup()
+  ungroup() %>%
+  filter(look <= first_success_index) %>%
+  arrange(first_success_index) %>%
+  mutate(first_success_index = factor(first_success_index)) %>%
+  arrange(trial, look)
+
 
 #create table with the critical z values
 df_critical_z <- tibble(zvalue = qnorm(efficacy_thresholds/2), nPat = analyses_nPatients)
