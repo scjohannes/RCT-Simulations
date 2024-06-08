@@ -34,10 +34,6 @@ analyses_scheduled
 analyses_nPatients
 efficacy_thresholds
 
-#NOTE: uncomment the line above, if you want to visualize type I error inflation if you don't use stopping rules
-#First number is the alpha used for all looks
-#efficacy_thresholds <- rep(0.05, 5)
-
 # Simulation Parameters
 nSims <- 20
 trialnum <- numeric(nSims)
