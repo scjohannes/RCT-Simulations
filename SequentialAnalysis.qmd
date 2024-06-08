@@ -43,14 +43,11 @@ theme_set(
     )
 )
 
-## Load simulation ----
-source("RCT_Binary_Outcome_Interim_Efficacy_Multiple_Looks.r")
-
 ## Load custom functions ----
 source("functions/plot_interim_or.R")
 source("functions/plot_interim_z.R")
+source("functions/RCT_sim_mult_looks.R")
 ```
-
 
 Quarto enables you to weave together content and executable code into a finished presentation. To learn more about Quarto presentations see <https://quarto.org/docs/presentations/>.
 
@@ -58,7 +55,7 @@ Quarto enables you to weave together content and executable code into a finished
 
 When you click the **Render** button a document will be generated that includes:
 
-:::{.incremental}
+::: incremental
 -   Content authored with markdown
 -   Output from executable code
 :::
@@ -66,7 +63,6 @@ When you click the **Render** button a document will be generated that includes:
 ## 5 looks with stopping {.smaller .scrollable}
 
 ::: panel-tabset
-
 ### Plot
 
 ```{r}
@@ -74,20 +70,21 @@ When you click the **Render** button a document will be generated that includes:
 #| fig-width: 10
 #| fig-height: 4.5
 
-plot_interim_or(data = df_stopped_interim, true_effect = trueOR, x_breaks = analyses_nPatients, design = design$typeOfDesign, event_rate = death0, title_suffix = "Stopped at interim")
+sim1 <- RCT_sim_mult_looks(seed = 201, death0 = 0.3, death1 = 0.3, nSims = 20, nPatients = 1000, typeOfDesign = "P")
+
+plot_interim_or(data = sim1$df_stopped_interim, true_effect = sim1$trueOR, x_breaks = sim1$analyses_nPatients, design = sim1$design, event_rate = sim1$death0, title_suffix = "Stopped at interim")
 ```
 
 ### Data
 
 ```{r}
-knitr::kable(df_stopped_interim)
+knitr::kable(sim1$df_stopped_interim)
 ```
 :::
 
 ## 5 looks without stopping {.smaller .scrollable}
 
 ::: panel-tabset
-
 ### Plot
 
 ```{r}
@@ -95,12 +92,12 @@ knitr::kable(df_stopped_interim)
 #| fig-width: 10
 #| fig-height: 4.5
 
-plot_interim_or(data = df_long, true_effect = trueOR, x_breaks = analyses_nPatients, design = design$typeOfDesign, event_rate = death0, title_suffix = "Not stopped at interim")
+plot_interim_or(data = sim1$df_not_stopped_interim, true_effect = sim1$trueOR, x_breaks = sim1$analyses_nPatients, design = sim1$design, event_rate = sim1$death0, title_suffix = "Not stopped at interim")
 ```
 
 ### Data
 
 ```{r}
-knitr::kable(df_stopped_interim)
+#knitr::kable(df_stopped_interim)
 ```
 :::
