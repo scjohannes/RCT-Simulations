@@ -8,7 +8,6 @@ plot_interim_z <- function(data_trials, data_crit_z, filter_trial = NULL, x_brea
     geom_point(aes(x = nPat, y = zvalue, group = trial, color = overall_success)) +
     geom_line(aes(x = nPat, y = zvalue, group = trial, color = overall_success)) +
     geom_line(data = data_crit_z, aes(x = nPat, y = zvalue), color = "blue", linewidth = 1, linetype = "dashed") +
-    xlim(0, NA) +
     {if(!is.null(x_breaks)) scale_x_continuous(breaks = round(x_breaks)) else NULL} +
     theme(legend.position = "bottom") +
     {if(!is.null(ylim_range)) ylim(ylim_range) else NULL} +

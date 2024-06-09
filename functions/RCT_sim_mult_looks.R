@@ -189,14 +189,16 @@ RCT_sim_mult_looks <- function(nPatients = 1000, nSims = 20, seed = NULL, death0
   }
   
   suppressWarnings(
-  df_not_stopped_interim <- df_not_stopped_interim %>%
-    group_by(trial) %>%
-    mutate(first_success_index = min(which(success == 1))) %>%
-    mutate(first_success_index = ifelse(first_success_index == Inf, nLooks, first_success_index))  %>%
-    ungroup() %>%
-    arrange(first_success_index) %>%
-    mutate(first_success_index = factor(first_success_index)) %>%
-    arrange(trial, look)
+    df_not_stopped_interim <- df_not_stopped_interim %>%
+      group_by(trial) %>%
+      mutate(first_success_index = min(which(success == 1))) %>%
+      mutate(first_success_index = ifelse(first_success_index == Inf, nLooks, first_success_index))  %>%
+      ungroup() %>%
+      mutate(first_success_index = ifelse(overall_success == 0, "Never", first_success_index)) %>%
+      arrange(first_success_index) %>%
+      mutate(first_success_index = factor(first_success_index)) %>%
+      arrange(trial, look)
+    
   )
   
   suppressWarnings(
@@ -207,6 +209,7 @@ RCT_sim_mult_looks <- function(nPatients = 1000, nSims = 20, seed = NULL, death0
     mutate(first_success_index = ifelse(first_success_index == Inf, nLooks, first_success_index))  %>%
     ungroup() %>%
     filter(look <= first_success_index) %>%
+    mutate(first_success_index = ifelse(overall_success == 0, "Never", first_success_index)) %>%
     arrange(first_success_index) %>%
     mutate(first_success_index = factor(first_success_index)) %>%
     arrange(trial, look)

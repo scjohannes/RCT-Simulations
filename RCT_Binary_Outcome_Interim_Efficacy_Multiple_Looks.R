@@ -6,7 +6,7 @@ library(glue)
 # Here we will specify the basics: maximum total number of patients to enroll and event rate for each treatment arm
 nPatients <- 1000 # here is where you specify the planned max number of patients you want included in each RCT 
 death0 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 0' in these trials
-death1 <- 0.3 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
+death1 <- 0.4 # here is where you specify the event rate for patients receiving 'treatment 1' in these trials
 # I have set this one up to test the power for a treatment that would reduce mortality from 40% in control group (0) to 30% in treatment group (1)
 # If one wants to estimate the "type 1 error" under different interim approaches, simply make 'death0' and 'death1' the same (no treatment effect)
 
@@ -163,21 +163,32 @@ success_long <- convert_to_long(success, "success")
 overall_success_long <- tibble(overall_success = as.factor(rep(overall_success, each = nLooks)))
 
 #create one df_long
-df_long <- right_join(or_long, zvalue_long)
-df_long <- right_join(df_long, pvalue_long)
-df_long <- right_join(df_long, success_long)
+df_long <- suppressMessages(right_join(or_long, zvalue_long))
+df_long <- suppressMessages(right_join(df_long, pvalue_long))
+df_long <- suppressMessages(right_join(df_long, success_long))
 df_long <- df_long %>% bind_cols(overall_success_long)
-df_long <- df_long %>% bind_cols(tibble(nPat = rep(NA, nLooks*nSims)))
+df_not_stopped_interim <- df_long %>% bind_cols(tibble(nPat = rep(NA, nLooks*nSims)))
 
 for(i in 1:nLooks){
-   df_long <- df_long %>%
+  df_not_stopped_interim <- df_not_stopped_interim %>%
     mutate(
       nPat = case_when(
         look == i ~ analyses_nPatients[i], 
         look != i ~ nPat
-        )
       )
+    )
 }
+
+
+  df_not_stopped_interim <- df_not_stopped_interim %>%
+    group_by(trial) %>%
+    mutate(first_success_index = min(which(success == 1))) %>%
+    mutate(first_success_index = ifelse(first_success_index == Inf, nLooks, first_success_index))  %>%
+    ungroup() %>%
+    mutate(first_success_index = ifelse(overall_success == 0, "Never", first_success_index)) %>%
+    arrange(first_success_index) %>%
+    mutate(first_success_index = factor(first_success_index)) %>%
+    arrange(trial, look)
 
 #create dataframe which simulates trial stop if interim results sign
 df_stopped_interim <- df_long %>%
@@ -186,6 +197,7 @@ df_stopped_interim <- df_long %>%
   mutate(first_success_index = ifelse(first_success_index == Inf, nLooks, first_success_index))  %>%
   ungroup() %>%
   filter(look <= first_success_index) %>%
+  mutate(first_success_index = ifelse(overall_success == 0, "Never", first_success_index)) %>%
   arrange(first_success_index) %>%
   mutate(first_success_index = factor(first_success_index)) %>%
   arrange(trial, look)
@@ -195,4 +207,4 @@ df_stopped_interim <- df_long %>%
 df_critical_z <- tibble(zvalue = qnorm(efficacy_thresholds/2), nPat = analyses_nPatients)
 
 #remove no longer needed objects
-rm(i, j, death, deathprob, efficacy_thresholds, pid, treatment, trialnum, overall_success, lcl, model, new_columns, or, or_long, overall_success_long, pvalue, pvalue_long, success, simulation_results, success_long, trialdata, ucl, zvalue, zvalue_long)
+#rm(i, j, death, deathprob, efficacy_thresholds, pid, treatment, trialnum, overall_success, lcl, model, new_columns, or, or_long, overall_success_long, pvalue, pvalue_long, success, simulation_results, success_long, trialdata, ucl, zvalue, zvalue_long)

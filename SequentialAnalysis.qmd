@@ -5,6 +5,7 @@ date: "2024-06-26"
 format: 
   revealjs:
     logo: Logo_Unibas_USB_ALL.svg
+    theme: default
 editor: visual
 ---
 
@@ -43,12 +44,6 @@ theme_set(
       legend.position = "bottom"
     )
 )
-
-## Load custom functions ----
-source("functions/plot_interim_or_FstScs.R")
-source("functions/plot_interim_or_OvScs.R")
-source("functions/plot_interim_z.R")
-source("functions/RCT_sim_mult_looks.R")
 ```
 
 ## One year ago... {.smaller}
@@ -73,6 +68,14 @@ For had he himself not published on the subject more almost 17 (!) years ago?
 
 # What's all the fuss about interim analysis?
 
+## First, back to the basics
+
+::: incremental
+-   p-values and their distributions
+-   error control
+-   optional stopping
+:::
+
 ## Back to the basics: p-values
 
 What was the definition of a p-value again?
@@ -87,10 +90,10 @@ What was the definition of a p-value again?
 
 -   P-values are a statement about the **probability of data**, [not]{.underline} a statement about the probability of a hypothesis or the probability of a theory.
 
-## Back to the basics: p-values
+## Distribution of p-values under $H_0$
 
 ```{r fig-pdistr2, cache = TRUE, echo=FALSE}
-#| fig-cap: "Distribution of *p*-values when the null hypothesis is true. ©Lakens"
+#| fig-cap: "Distribution of *p*-values when the null hypothesis is true. By <a href='https://lakens.github.io/statistical_inferences/01-pvalue.html#fig-pdistr2'>Daniel Lakens</a>."
 
 #Set number of simulations
 nSims <- 100000 #number of simulated experiments
@@ -114,10 +117,10 @@ abline(h=nSims/bars, col = "red", lty=3, lwd = 2)
 
 ```
 
-## Back to the basics: p-values
+## Distribution of p-values under $H_A$
 
 ```{r fig-pdistr1, cache = TRUE, echo=FALSE}
-#| fig-cap: "Distribution of *p*-values when power = 50%. ©Lakens" 
+#| fig-cap: "Distribution of *p*-values when power = 50%. By <a href='https://lakens.github.io/statistical_inferences/01-pvalue.html#fig-pdistr1'>Daniel Lakens</a>." 
 
 #Set number of simulations
 nSims <- 100000 # number of simulated experiments
@@ -141,10 +144,10 @@ abline(h=nSims/bars, col = "red", lty=3, lwd = 2)
 
 ```
 
-## Back to the basics: p-values
+## Distribution of p-values under $H_A$
 
 ```{r fig-paradox, echo=FALSE}
-#| fig-cap: "*P*-value distribution for 0 (grey horizontal line, 50 percent power (black solid curve), and 99 percent power (black dotted curve, where *p*-values just below 0.05 are more likely when $H_0$ is true than when $H_1$ is true). ©Lakens"
+#| fig-cap: "*P*-value distribution for 0 (grey horizontal line, 50 percent power (black solid curve), and 99 percent power (black dotted curve, where *p*-values just below 0.05 are more likely when $H_0$ is true than when $H_1$ is true). By <a href='https://lakens.github.io/statistical_inferences/01-pvalue.html#fig-pdft'> Daniel Lakens</a>."
 # Lindley plot
 
 n <- 150
@@ -180,7 +183,7 @@ curve(pdf2_t, 0, 1, n = 1000, col = "black", lwd = 3, lty = 3, add = TRUE)
 
 ```
 
-## Back to the basics: Error control
+## Error control
 
 ```{r fig-errortypes, echo = FALSE, fig.cap='Difference between Type 1 and Type 2 errors. Figure made by <a href="https://effectsizefaq.com/2010/05/31/i-always-get-confused-about-type-i-and-ii-errors-can-you-show-me-something-to-help-me-remember-the-difference/">Paul Ellis</a>'}
 
@@ -188,7 +191,7 @@ knitr::include_graphics("images/type1type2error.jpg")
 
 ```
 
-## Back to the basics: Error control {.smaller}
+## Error control {.smaller}
 
 The desire to make scientific claims based on a methodological procedure that (when the assumptions are met), **limits the percentage of incorrect claims to a desired maximum value**.
 
@@ -198,8 +201,8 @@ $\rightarrow$ significance level $\alpha$!
 
 . . .
 
-```{r fig-pdistr3, cache = TRUE, echo=FALSE}
-#| fig-height: 4.5
+```{r fig-pdistr3, cache = TRUE}
+#| fig-height: 4
 #| fig-width: 10
 
 #Set number of simulations
@@ -227,64 +230,192 @@ abline(v=0.05, col = "blue", lty = 3, lwd = 2)
 
 ## Optional stopping leads to Type-I error inflation
 
-![Simulated p-values for each additional observation when the null is true. ©Lakens](images/animatep.gif)
+. . .
 
-## 4 looks with stopping {.smaller .scrollable}
+![Simulated p-values for each additional observation when the null is true. By [Daniel Lakens](https://lakens.github.io/statistical_inferences/02-errorcontrol.html#fig-animatep).](images/animatep.gif)
 
-::: panel-tabset
-### Plot
+# How can we repeatedly analyze incoming data without Type-I error inflation?
+
+# Sequential analysis
+
+## Sequential analysis - Terminology
+
+::: incremental
+-   **Look**: analyzing all the collected data up to specific point
+-   **Interim** **analysis**: analysis at all but the final look
+-   **Final** **analysis**: Analysis at the final look
+-   **overall** $\alpha$ **- level:** accepted Type I error rate across all looks
+:::
+
+## Tests in sequential analysis are dependent
+
+-   Test at look 2 combines th old data collected at look 1 with new data at look 2
+
+-   Type 1 error rate inflates less quickly compared to independent tests
+
+$\rightarrow$ enables more efficient and flexible solutions to controlling error rates
+
+## Critical z-values {.smaller}
+
+::: columns
+::: {.column width="70%"}
+```{r fig-pboundaries, cache = TRUE}
+#| fig-cap: critical Z-values for 2 looks, overall $\alpha$ of 0.05 and Pocock correction.
+#| fig-height: 7
+
+
+design <- getDesignGroupSequential(
+    kMax = 2,
+    typeOfDesign = "P",
+    alpha = 0.05,
+    sided = 2
+)
+
+plot(design, type = 1)
+```
+:::
+
+::: {.column width="30%"}
+::: incremental
+$\alpha$-levels:
+
+-   Pocock: 0.0294; 0.0294
+
+-   Bonferroni: 0.25; 0.25
+
+    -   overly conservative
+:::
+:::
+:::
+
+. . .
+
+$$Pr\{Z_n \geq c_1\} + Pr\{Z_n < c_1, Z_N \geq c_2\} = \alpha$$
+
+## Simulation parameters {.smaller}
+
+```{r}
+#| warning: false
+source("presentation/figures.R")
+```
+
+-   Consider a parallel-group 1:1 randomized trial witha binary outcome
+-   Probability of failure (e.g., mortality) is `r sim1$death0` in control group
+-   Suppose that intervention is in fact effective:
+    -   risk (of mortality) is `r sim1$death1` in intervention group
+    -   OR: `r round(sim1$trueOR, digits = 2)`
+-   `r max(sim1$analyses_nPatients)` Patients per trial
+
+## One Trial {.smaller}
+
+-   $P(Event)$ of `r sim1$death0` in control group, `r sim1$death1` in intervention group
+-   `r max(sim1$analyses_nPatients)` Patients per Trial, `r max(sim1$df_not_stopped_interim$trial)` trials.
+-   *True* OR: `r round(sim1$trueOR, digits = 2)`
+
+. . .
 
 ```{r}
 #| echo: false
 #| fig-width: 10
 #| fig-height: 4.5
 
-sim1 <- RCT_sim_mult_looks(seed = 2, death0 = 0.4, death1 = 0.3, nSims = 100, nPatients = 1e3, nLooks = 4, typeOfDesign = "OF")
-
-sim2 <- RCT_sim_mult_looks(seed = 2, death0 = 0.4, death1 = 0.3, nSims = 100, nPatients = 1e3, nLooks = 4, typeOfDesign = "P")
-
-#sim1$df_stopped_interim |> filter(first_success_index == 1) |> summarize(mean_OR = mean(or))
-#sim1$df_not_stopped_interim |> filter((first_success_index == 1 | first_success_index == 2), (look == 2)) |> summarize(median_OR = median(or))
-#sim1$df_not_stopped_interim |> filter(look == 3) |> summarize(median_OR = median(or))
-
-sim1$trueOR
-
-sim1$df_not_stopped_interim |> group_by(trial) |> slice_head(n = 1) |> ungroup() |> count(overall_success)
-
-plot_interim_or_FstScs(data = sim1$df_stopped_interim, true_effect = sim1$trueOR, x_breaks = sim1$analyses_nPatients, design = sim1$design, event_rate = sim1$death0, title_suffix = "Stopped at interim")
-
-plot_interim_or_FstScs(data = sim2$df_stopped_interim, true_effect = sim2$trueOR, x_breaks = sim2$analyses_nPatients, design = sim2$design, event_rate = sim2$death0, title_suffix = "Stopped at interim")
-
-#plot_interim_or_OvScs(data = sim1$df_stopped_interim, true_effect = sim1$trueOR, x_breaks = sim1$analyses_nPatients, design = sim1$design, event_rate = sim1$death0, title_suffix = "Stopped at interim")
-
-
+p2.1
 ```
 
-### Data
+## One Trial {.smaller}
 
-```{r}
-knitr::kable(sim1$df_stopped_interim)
-```
-:::
-
-## 4 looks without stopping {.smaller .scrollable}
-
-::: panel-tabset
-### Plot
+-   $P(Event)$ of `r sim1$death0` in control group, `r sim1$death1` in intervention group
+-   `r max(sim1$analyses_nPatients)` Patients per Trial, `r max(sim1$df_not_stopped_interim$trial)` trials.
+-   *True* OR: `r round(sim1$trueOR, digits = 2)`
 
 ```{r}
 #| echo: false
 #| fig-width: 10
 #| fig-height: 4.5
 
-plot_interim_or_FstScs(data = sim1$df_not_stopped_interim, true_effect = sim1$trueOR, x_breaks = sim1$analyses_nPatients, design = sim1$design, event_rate = sim1$death0, title_suffix = "Not stopped at interim")
-
-plot_interim_or_OvScs(data = sim1$df_not_stopped_interim, true_effect = sim1$trueOR, x_breaks = sim1$analyses_nPatients, design = sim1$design, event_rate = sim1$death0, title_suffix = "Not stopped at interim")
+p2.2
 ```
 
-### Data
+## 100 Trials {.smaller}
+
+-   $P(Event)$ of `r sim1$death0` in control group, `r sim1$death1` in intervention group
+-   `r max(sim1$analyses_nPatients)` Patients per Trial, `r max(sim1$df_not_stopped_interim$trial)` trials.
+-   *True* OR: `r round(sim1$trueOR, digits = 2)`
 
 ```{r}
-#knitr::kable(df_stopped_interim)
+#| echo: false
+#| fig-width: 10
+#| fig-height: 4.5
+#| warning: false
+
+p2.3
 ```
-:::
+
+## Trials with $p < \alpha$ at look 1 {.smaller}
+
+-   $P(Event)$ of `r sim1$death0` in control group, `r sim1$death1` in intervention group
+-   `r max(sim1$analyses_nPatients)` Patients per Trial, `r max(sim1$df_not_stopped_interim$trial)` trials.
+-   *True* OR: `r round(sim1$trueOR, digits = 2)`
+
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 4.5
+#| warning: false
+
+p2.4
+```
+
+## Trials with $p < \alpha$ at look 1 {.smaller}
+
+-   $P(Event)$ of `r sim1$death0` in control group, `r sim1$death1` in intervention group
+-   `r max(sim1$analyses_nPatients)` Patients per Trial, `r max(sim1$df_not_stopped_interim$trial)` trials.
+-   *True* OR: `r round(sim1$trueOR, digits = 2)`
+
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 4.5
+#| warning: false
+
+p2.5
+```
+
+## OR *conditional* on efficacy{.smaller}
+
+```{r}
+median_OR_look1_cond <- sim1$df_stopped_interim |> filter(first_success_index == 1) |> summarize(median_OR = median(or)) |> pull()
+
+median_OR_look1_uncond <- sim1$df_not_stopped_interim |> filter(look == 1) |> summarize(median_OR = median(or)) |> pull()
+```
+
+-   *True* OR: `r round(sim1$trueOR, digits = 2)`
+-   Median OR of trials stopped early: `r median_OR_look1_cond`
+-   Median OR of all trials at look 1: `r median_OR_look1_uncond`
+
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 4.5
+
+p2.5
+```
+
+## Similar Type II error rate {.smaller .scrollable}
+
+```{r}
+pvalues_at_final <- sim1$df_not_stopped_interim |> filter(look == 2) |> select(pvalue) |> pull()
+power_1_look <- mean(pvalues_at_final < 0.05)*100
+```
+
+-   `r (sim1$df_not_stopped_interim |> group_by(trial) |> slice_head(n = 1) |> ungroup() |> count(overall_success))[2,2]` out of ``r max(sim1$df_not_stopped_interim$trial)` trials with $p < \alpha$, with 2 Looks and Pocock correction
+-   `r power_1_look`  out of `r max(sim1$df_not_stopped_interim$trial)` when not doing interim analysis an one-tailed $\alpha$ of 0.05 at final analysis
+
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 4.5
+#| warning: false
+
+plot_interim_or_OvScs(data = sim1$df_stopped_interim, true_effect = sim1$trueOR, x_breaks = sim1$analyses_nPatients, design = sim1$design, event_rate = sim1$death0, title_suffix = "Stopped at interim")
+```
