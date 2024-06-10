@@ -357,7 +357,7 @@ Johannes Schwenke
 </section>
 <section id="matthias-was-not-amused" class="slide level2 smaller">
 <h2>Matthias was not amused</h2>
-<p>For had he himself not published on the subject more almost 17 (!) years ago?</p>
+<p>For had he himself not published on the subject already almost 17 (!) years ago?</p>
 
 <img data-src="images/Matthias_Paper.png" class="r-stretch"><blockquote>
 <p>“Compelling evidence suggests that trials stopped early for benefit systematically overestimate treatment effects, sometimes by a large amount. Unresolved controversies in trials stopped early for benefit include ethical and statistical problems in the interpretation of results.”</p>
@@ -367,6 +367,13 @@ Johannes Schwenke
 <section id="whats-all-the-fuss-about-interim-analysis" class="title-slide slide level1 center">
 <h1>What’s all the fuss about interim analysis?</h1>
 
+</section>
+<section id="i-want-show-two-things" class="slide level2">
+<h2>I want show two things</h2>
+<ul>
+<li>Why stopping trials early for efficacy will tend to <strong>overestimate</strong> the magnitude of the treatment effect</li>
+<li>Why trials stopped early for efficacy are <u><strong>not</strong></u> more likely to be false positive results</li>
+</ul>
 </section>
 <section id="first-back-to-the-basics" class="slide level2">
 <h2>First, back to the basics</h2>
@@ -383,7 +390,7 @@ Johannes Schwenke
 <p>What was the definition of a p-value again?</p>
 <div class="fragment">
 <blockquote>
-<p>The definition of a p-value is the probability of observing the sample data, or more extreme data, assuming the null hypothesis is true.<sup>1</sup></p>
+<p>[A] p-value is the probability of observing the sample data, or more extreme data, assuming the null hypothesis is true.<sup>1</sup></p>
 </blockquote>
 </div>
 <div class="fragment">
@@ -394,15 +401,28 @@ Johannes Schwenke
 <aside><ol class="aside-footnotes"><li id="fn1"><p>Lakens, <a href="https://lakens.github.io/statistical_inferences/">Improving Your Statistical Inferences</a></p></li></ol></aside></section>
 <section id="distribution-of-p-values-under-h_0" class="slide level2">
 <h2>Distribution of p-values under <span class="math inline">\(H_0\)</span></h2>
-
-<img data-src="SequentialAnalysis_files/figure-revealjs/fig-pdistr2-1.png" width="960" class="r-stretch quarto-figure-center"><p class="caption">
+<div class="fragment">
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-pdistr2" class="quarto-figure quarto-figure-center quarto-float">
+<figure class="quarto-float quarto-float-fig">
+<div aria-describedby="fig-pdistr2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img data-src="SequentialAnalysis_files/figure-revealjs/fig-pdistr2-1.png" width="960">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pdistr2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Figure&nbsp;1: Distribution of <em>p</em>-values when the null hypothesis is true. By <a href="https://lakens.github.io/statistical_inferences/01-pvalue.html#fig-pdistr2">Daniel Lakens</a>.
-</p></section>
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</section>
 <section id="distribution-of-p-values-under-h_a" class="slide level2">
 <h2>Distribution of p-values under <span class="math inline">\(H_A\)</span></h2>
 
 <img data-src="SequentialAnalysis_files/figure-revealjs/fig-pdistr1-1.png" width="960" class="r-stretch quarto-figure-center"><p class="caption">
-Figure&nbsp;2: Distribution of <em>p</em>-values when power = 50%. By <a href="https://lakens.github.io/statistical_inferences/01-pvalue.html#fig-pdistr1">Daniel Lakens</a>.
+Figure&nbsp;2: Distribution of <em>p</em>-values when power ~ 80%. Adapted from <a href="https://lakens.github.io/statistical_inferences/01-pvalue.html#fig-pdistr1">Daniel Lakens</a>.
 </p></section>
 <section id="distribution-of-p-values-under-h_a-1" class="slide level2">
 <h2>Distribution of p-values under <span class="math inline">\(H_A\)</span></h2>
@@ -417,6 +437,42 @@ Figure&nbsp;3: <em>P</em>-value distribution for 0 (grey horizontal line, 50 per
 Figure&nbsp;4: Difference between Type 1 and Type 2 errors. Figure made by <a href="https://effectsizefaq.com/2010/05/31/i-always-get-confused-about-type-i-and-ii-errors-can-you-show-me-something-to-help-me-remember-the-difference/">Paul Ellis</a>
 </p></section>
 <section id="error-control-1" class="slide level2 smaller">
+<h2>Error control</h2>
+<p>The desire to make scientific claims based on a methodological procedure that (when the assumptions are met), <strong>limits the percentage of incorrect claims to a desired maximum value</strong>.</p>
+<div class="fragment">
+<table style="width:99%;">
+<colgroup>
+<col style="width: 35%">
+<col style="width: 31%">
+<col style="width: 31%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Decision about null hypothesis (<span class="math inline">\(H_0\)</span>)</th>
+<th>Null hypothesis <span class="math inline">\(H_0\)</span> is True</th>
+<th>Null hypothesis <span class="math inline">\(H_0\)</span> is False</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Fail to reject</strong></td>
+<td><p>Correct inference (true negative)</p>
+<p><em>(probability = 1 -</em> <span class="math inline">\(\alpha\)</span>)</p></td>
+<td><p>Type II error (false negative)</p>
+<p><em>(probability =</em> <span class="math inline">\(\beta\)</span>)</p></td>
+</tr>
+<tr class="even">
+<td><strong>Reject</strong></td>
+<td><p>Type I error (false positive)</p>
+<p><em>(probability =</em> <span class="math inline">\(\alpha\)</span>)</p></td>
+<td><p>Correct inference (true positive)</p>
+<p><em>(probability = 1 -</em> <span class="math inline">\(\beta\)</span>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="error-control-2" class="slide level2 smaller">
 <h2>Error control</h2>
 <p>The desire to make scientific claims based on a methodological procedure that (when the assumptions are met), <strong>limits the percentage of incorrect claims to a desired maximum value</strong>.</p>
 <div class="fragment">
@@ -474,7 +530,7 @@ Figure&nbsp;5
 <section id="tests-in-sequential-analysis-are-dependent" class="slide level2">
 <h2>Tests in sequential analysis are dependent</h2>
 <ul>
-<li><p>Test at look 2 combines th old data collected at look 1 with new data at look 2</p></li>
+<li><p>Test at look 2 combines the old data collected at look 1 with new data at look 2</p></li>
 <li><p>Type 1 error rate inflates less quickly compared to independent tests</p></li>
 </ul>
 <p><span class="math inline">\(\rightarrow\)</span> enables more efficient and flexible solutions to controlling error rates</p>
@@ -517,7 +573,7 @@ Figure&nbsp;6: critical Z-values for 2 looks, overall <span class="math inline">
 <section id="simulation-parameters" class="slide level2 smaller">
 <h2>Simulation parameters</h2>
 <ul>
-<li>Consider a parallel-group 1:1 randomized trial witha binary outcome</li>
+<li>Consider a parallel-group 1:1 randomized trial with a binary outcome</li>
 <li>Probability of failure (e.g., mortality) is 0.4 in control group</li>
 <li>Suppose that intervention is in fact effective:
 <ul>
@@ -594,46 +650,92 @@ Figure&nbsp;6: critical Z-values for 2 looks, overall <span class="math inline">
 <section id="similar-type-ii-error-rate" class="slide level2 smaller scrollable">
 <h2>Similar Type II error rate</h2>
 <ul>
-<li>88 out of 100 trials with <span class="math inline">\(p &lt; \alpha\)</span></li>
+<li>88 out of `100 trials with <span class="math inline">\(p &lt; \alpha\)</span>, with 2 Looks and Pocock correction</li>
 <li>91 out of 100 when not doing interim analysis an one-tailed <span class="math inline">\(\alpha\)</span> of 0.05 at final analysis</li>
 </ul>
 
 <img data-src="SequentialAnalysis_files/figure-revealjs/unnamed-chunk-10-1.png" width="960" class="r-stretch"></section>
-<section id="looks-without-stopping" class="slide level2 smaller scrollable">
-<h2>4 looks without stopping</h2>
-<div class="panel-tabset">
-<ul id="tabset-1" class="panel-tabset-tabby"><li><a data-tabby-default="" href="#tabset-1-1">Plot</a></li><li><a href="#tabset-1-2">Data</a></li></ul>
-<div class="tab-content">
-<div id="tabset-1-1">
-<div class="cell">
-<div class="cell-output-display">
-<div>
-<figure>
-<p><img data-src="SequentialAnalysis_files/figure-revealjs/unnamed-chunk-11-1.png" width="960"></p>
-</figure>
-</div>
-</div>
-<div class="cell-output-display">
-<div>
-<figure>
-<p><img data-src="SequentialAnalysis_files/figure-revealjs/unnamed-chunk-11-2.png" width="960"></p>
-</figure>
-</div>
-</div>
-</div>
-</div>
-<div id="tabset-1-2">
+<section id="type-i-error-with-2-looks" class="slide level2 smaller">
+<h2>Type I error with 2 looks</h2>
+<ul>
+<li><span class="math inline">\(P(Event)\)</span> of 0.4 in control group, 0.4 in intervention group</li>
+<li>1000 Patients per Trial, 100 trials.</li>
+<li><em>True</em> OR: 1</li>
+</ul>
 
-</div>
-</div>
-</div>
+<img data-src="SequentialAnalysis_files/figure-revealjs/unnamed-chunk-11-1.png" width="960" class="r-stretch"></section>
+<section id="type-i-error-2-looks" class="slide level2 smaller">
+<h2>Type I error 2 looks</h2>
+<ul>
+<li><span class="math inline">\(P(Event)\)</span> of 0.4 in control group, 0.4 in intervention group</li>
+<li>1000 Patients per Trial, 100 trials.</li>
+<li><em>True</em> OR: 1</li>
+</ul>
+
+<img data-src="SequentialAnalysis_files/figure-revealjs/unnamed-chunk-12-1.png" width="960" class="r-stretch"></section>
+<section id="type-i-error-with-2-looks-1" class="slide level2 smaller">
+<h2>Type I error with 2 looks</h2>
+<ul>
+<li><span class="math inline">\(P(Event)\)</span> of 0.4 in control group, 0.4 in intervention group</li>
+<li>1000 Patients per Trial, 100 trials.</li>
+<li><em>True</em> OR: 1</li>
+</ul>
+
+<img data-src="SequentialAnalysis_files/figure-revealjs/unnamed-chunk-13-1.png" width="960" class="r-stretch"></section>
+<section id="type-i-error-with-2-looks-2" class="slide level2 smaller">
+<h2>Type I error with 2 looks</h2>
+<ul>
+<li>With 2 looks we would have observed 4 p-values <span class="math inline">\(&lt; \alpha\)</span> (out of 100)</li>
+</ul>
+
+<img data-src="SequentialAnalysis_files/figure-revealjs/unnamed-chunk-15-1.png" width="960" class="r-stretch"></section>
+<section id="type-i-error-with-1-look" class="slide level2 smaller">
+<h2>Type I error with 1 look</h2>
+<ul>
+<li>With 2 looks we would have observed 4 p-values <span class="math inline">\(&lt; \alpha\)</span> (out of 100)</li>
+<li>With only 1 final look, we would have observed 6 p-values <span class="math inline">\(&lt; \alpha\)</span> (out of 100)</li>
+</ul>
+
+<img data-src="SequentialAnalysis_files/figure-revealjs/unnamed-chunk-16-1.png" width="960" class="r-stretch"></section>
+<section id="summary" class="slide level2">
+<h2>Summary</h2>
+<ol type="1">
+<li><p>Trials that stop early for efficacy will tend to overestimate the treatment effect</p>
+<ol type="a">
+<li>(The point estimate will tend to be higher than the true treatment effect)</li>
+</ol></li>
+<li><p>This does <strong>not</strong> mean that the intervention is less likely to work</p></li>
+<li><p>Sequential designs do not have the goal to quantify the strength of evidence, or provide accurate estimates of the effect size</p></li>
+</ol>
+</section>
+<section id="summary-1" class="slide level2 smaller">
+<h2>Summary</h2>
+<ul>
+<li>Error control is at the heart of frequentist statistics, and achieved with sequential analysis</li>
+<li>The population effect size is always uncertain <span class="math inline">\(\rightarrow\)</span> when we power for an expected effect size there is considerable uncertainty about our statistical power <span class="math inline">\(\rightarrow\)</span> Type II Error rate <em>unclear</em></li>
+<li>If we determine the smallest effect size of interest <span class="math inline">\(\rightarrow\)</span> we can design our study with a <em>known</em> Type II error rate to detect or reject this value.</li>
+<li>Reporting adjusted (shrunk) effect sizes can be useful</li>
+</ul>
+<blockquote>
+<p>The strongest possible sample size justification is based on an explicit statement of the smallest effect size that is considered interesting.<sup>1</sup></p>
+</blockquote>
+<aside><ol class="aside-footnotes"><li id="fn2"><p><a href="https://lakens.github.io/statistical_inferences/08-samplesizejustification.html#what-is-the-smallest-effect-size-of-interest">Improving Your Statistical Inferences - 8 Sample Size Justification (lakens.github.io)</a></p></li></ol></aside></section>
+<section id="summary-2" class="slide level2 smaller">
+<h2>Summary</h2>
+<ul>
+<li><strong>“Winners curse”</strong>
+<ul>
+<li>Overestimation of effect sizes is not only a problem of trials stopped early for efficacy</li>
+</ul></li>
+<li>The median estimated power of 20’000 RCTs (for the actual effect size) from the Cochrane Database was 13%<sup>1</sup> <span class="math inline">\(\rightarrow\)</span> overestimation widespread</li>
+</ul>
 <div class="quarto-auto-generated-content">
 <p><img src="Logo_Unibas_USB_ALL.svg" class="slide-logo"></p>
 <div class="footer footer-default">
 
 </div>
 </div>
-</section></section>
+<aside><ol class="aside-footnotes"><li id="fn3"><p>Zwet, Erik van, Simon Schwab, and Stephen Senn. 2021. “The Statistical Properties of RCTs and a Proposal for Shrinkage.” <em>Statistics in Medicine</em> 40 (27): 6107–17.</p></li></ol></aside></section></section>
 
     </div>
   </div>

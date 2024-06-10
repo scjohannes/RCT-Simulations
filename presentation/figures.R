@@ -62,6 +62,12 @@ stopped_trials_2 <- sim3$df_not_stopped_interim |>
   unique() |> 
   pull()
 
+sig_at_final_2 <- sim3$df_not_stopped_interim |> 
+  filter(first_success_index == 2) |> 
+  select(trial) |> 
+  unique() |> 
+  pull()
+
 
 p3.1 <- plot_interim_or_black(data = sim4$df_not_stopped_interim, true_effect = sim4$trueOR, x_breaks = sim4$analyses_nPatients, event_rate = sim4$death0, title_suffix = ", not stopped at interim", ylim_range = c(0,2.5))
 
@@ -70,6 +76,9 @@ p3.2 <- p3.1 +
 
 sim4_stop <- sim4$df_not_stopped_interim |> filter(trial %in% stopped_trials_2) |> filter(look <= 5)
 sim4_not_stop <- sim4$df_not_stopped_interim |> filter(!trial %in% stopped_trials_2)
+
+sim4_sig_final <- sim4_not_stop |> filter(trial %in% sig_at_final_2)
+sim4_not_sig <- sim4_not_stop |> filter(!trial %in% sig_at_final_2)
 
 p3.3 <- ggplot() +
   geom_point(data = sim4_not_stop, aes(x = nPat, y = or, group = trial), color = "black") +
@@ -85,6 +94,36 @@ p3.3 <- ggplot() +
   xlab("# Patients Analyzed") +
   ggtitle(paste("Event-rate = ", sim3$death0, ", stopped at interim"))
 
-#sim3$df_not_stopped_interim |> filter(overall_success == 1) |> select(trial) |> unique() |> count()
-sim3_Error_1_look <- sim3$df_not_stopped_interim |> filter(look == 2) |> select(pvalue) |> pull()
-sim3_Error_1_look <- mean(sim3_Error_1_look < 0.05)*100
+p3.4 <- ggplot() +
+  geom_point(data = sim4_not_sig, aes(x = nPat, y = or, group = trial), color = "black") +
+  geom_line(data = sim4_not_sig, aes(x = nPat, y = or, group = trial), color = "black") +
+  geom_point(data = sim4_sig_final, aes(x = nPat, y = or, group = trial), color = "red") +
+  geom_line(data = sim4_sig_final, aes(x = nPat, y = or, group = trial), color = "red") +
+  geom_point(data = sim4_stop, aes(x = nPat, y = or, group = trial), color = "red") +
+  geom_line(data = sim4_stop, aes(x = nPat, y = or, group = trial), color = "red") +
+  geom_hline(yintercept = sim3$trueOR, color = "blue", linetype = "dashed", linewidth = 1) +
+  geom_vline(xintercept = 500, linetype = "dashed", color = "red", linewidth = 1) +
+  scale_x_continuous(breaks = round(sim4$analyses_nPatients)) +
+  ylim(0, 2.5) +
+  theme(legend.position = "bottom") +
+  ylab("Odds Ratio") +
+  xlab("# Patients Analyzed") +
+  ggtitle(paste("Event-rate = ", sim3$death0, ", stopped at interim"))
+
+sim4_1look_sig_trials <- sim4$df_not_stopped_interim |> filter((look == 10 & pvalue < 0.05)) |> select(trial) |> pull()
+
+sim4_1look_not_sig <- sim4$df_not_stopped_interim |> filter(!(look == 10 & pvalue < 0.05))
+sim4_1look_sig <- sim4$df_not_stopped_interim |> filter(trial %in% sim4_1look_sig_trials)
+
+p3.5 <- ggplot() +
+  geom_point(data = sim4_1look_not_sig, aes(x = nPat, y = or, group = trial), color = "black") +
+  geom_line(data = sim4_1look_not_sig, aes(x = nPat, y = or, group = trial), color = "black") +
+  geom_point(data = sim4_1look_sig, aes(x = nPat, y = or, group = trial), color = "red") +
+  geom_line(data = sim4_1look_sig, aes(x = nPat, y = or, group = trial), color = "red") +
+  geom_hline(yintercept = sim3$trueOR, color = "blue", linetype = "dashed", linewidth = 1) +
+  scale_x_continuous(breaks = round(sim4$analyses_nPatients)) +
+  ylim(0, 2.5) +
+  theme(legend.position = "bottom") +
+  ylab("Odds Ratio") +
+  xlab("# Patients Analyzed") +
+  ggtitle(paste("Event-rate = ", sim3$death0, ", only 1 look."))

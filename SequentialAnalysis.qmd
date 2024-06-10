@@ -60,13 +60,18 @@ theme_set(
 
 ## Matthias was not amused {.smaller}
 
-For had he himself not published on the subject more almost 17 (!) years ago?
+For had he himself not published on the subject already almost 17 (!) years ago?
 
 ![](images/Matthias_Paper.png)
 
 > "Compelling evidence suggests that trials stopped early for benefit systematically overestimate treatment effects, sometimes by a large amount. Unresolved controversies in trials stopped early for benefit include ethical and statistical problems in the interpretation of results."
 
 # What's all the fuss about interim analysis?
+
+## I want show two things
+
+-   Why stopping trials early for efficacy will tend to **overestimate** the magnitude of the treatment effect
+-   Why trials stopped early for efficacy are [**not**]{.underline} more likely to be false positive results
 
 ## First, back to the basics
 
@@ -82,7 +87,7 @@ What was the definition of a p-value again?
 
 . . .
 
-> The definition of a p-value is the probability of observing the sample data, or more extreme data, assuming the null hypothesis is true.[^1]
+> \[A\] p-value is the probability of observing the sample data, or more extreme data, assuming the null hypothesis is true.[^1]
 
 [^1]: Lakens, [Improving Your Statistical Inferences](https://lakens.github.io/statistical_inferences/)
 
@@ -91,6 +96,8 @@ What was the definition of a p-value again?
 -   P-values are a statement about the **probability of data**, [not]{.underline} a statement about the probability of a hypothesis or the probability of a theory.
 
 ## Distribution of p-values under $H_0$
+
+. . .
 
 ```{r fig-pdistr2, cache = TRUE, echo=FALSE}
 #| fig-cap: "Distribution of *p*-values when the null hypothesis is true. By <a href='https://lakens.github.io/statistical_inferences/01-pvalue.html#fig-pdistr2'>Daniel Lakens</a>."
@@ -120,7 +127,7 @@ abline(h=nSims/bars, col = "red", lty=3, lwd = 2)
 ## Distribution of p-values under $H_A$
 
 ```{r fig-pdistr1, cache = TRUE, echo=FALSE}
-#| fig-cap: "Distribution of *p*-values when power = 50%. By <a href='https://lakens.github.io/statistical_inferences/01-pvalue.html#fig-pdistr1'>Daniel Lakens</a>." 
+#| fig-cap: "Distribution of *p*-values when power ~ 80%. Adapted from <a href='https://lakens.github.io/statistical_inferences/01-pvalue.html#fig-pdistr1'>Daniel Lakens</a>." 
 
 #Set number of simulations
 nSims <- 100000 # number of simulated experiments
@@ -129,14 +136,14 @@ bars <- 20
 
 for (i in 1:nSims) { # for each simulated experiment
   x <- rnorm(n = 71, mean = 100, sd = 15) # Simulate data
-  y <- rnorm(n = 71, mean = 105, sd = 15) # Simulate data
+  y <- rnorm(n = 71, mean = 107, sd = 15) # Simulate data
   p[i] <- t.test(x, y)$p.value # store the *p*-value
 }
   
 #Plot figure
 op <- par(mar = c(5,7,4,4)) #change white-space around graph
 hist(p, breaks=bars, xlab="p-values", ylab="number of p-values\n", axes=FALSE,
-     main=paste("p-value Distribution with 50% power"),
+     main=paste("p-value Distribution with ca. 80% power"),
      col="grey", xlim=c(0,1), ylim=c(0, nSims))
 axis(side=1, at=seq(0,1, 0.1), labels=seq(0,1,0.1))
 axis(side=2, at=seq(0,nSims, nSims/4), labels=seq(0,nSims, nSims/4), las=2)
@@ -197,6 +204,24 @@ The desire to make scientific claims based on a methodological procedure that (w
 
 . . .
 
++----------------------------------------+-----------------------------------+-----------------------------------+
+| Decision about null hypothesis ($H_0$) | Null hypothesis $H_0$ is True     | Null hypothesis $H_0$ is False    |
++========================================+===================================+===================================+
+| **Fail to reject**                     | Correct inference (true negative) | Type II error (false negative)    |
+|                                        |                                   |                                   |
+|                                        | *(probability = 1 -* $\alpha$)    | *(probability =* $\beta$)         |
++----------------------------------------+-----------------------------------+-----------------------------------+
+| **Reject**                             | Type I error (false positive)     | Correct inference (true positive) |
+|                                        |                                   |                                   |
+|                                        | *(probability =* $\alpha$)        | *(probability = 1 -* $\beta$)     |
++----------------------------------------+-----------------------------------+-----------------------------------+
+
+## Error control {.smaller}
+
+The desire to make scientific claims based on a methodological procedure that (when the assumptions are met), **limits the percentage of incorrect claims to a desired maximum value**.
+
+. . .
+
 $\rightarrow$ significance level $\alpha$!
 
 . . .
@@ -249,7 +274,7 @@ abline(v=0.05, col = "blue", lty = 3, lwd = 2)
 
 ## Tests in sequential analysis are dependent
 
--   Test at look 2 combines th old data collected at look 1 with new data at look 2
+-   Test at look 2 combines the old data collected at look 1 with new data at look 2
 
 -   Type 1 error rate inflates less quickly compared to independent tests
 
@@ -299,7 +324,7 @@ $$Pr\{Z_n \geq c_1\} + Pr\{Z_n < c_1, Z_N \geq c_2\} = \alpha$$
 source("presentation/figures.R")
 ```
 
--   Consider a parallel-group 1:1 randomized trial witha binary outcome
+-   Consider a parallel-group 1:1 randomized trial with a binary outcome
 -   Probability of failure (e.g., mortality) is `r sim1$death0` in control group
 -   Suppose that intervention is in fact effective:
     -   risk (of mortality) is `r sim1$death1` in intervention group
@@ -381,7 +406,7 @@ p2.4
 p2.5
 ```
 
-## OR *conditional* on efficacy{.smaller}
+## OR *conditional* on efficacy {.smaller}
 
 ```{r}
 median_OR_look1_cond <- sim1$df_stopped_interim |> filter(first_success_index == 1) |> summarize(median_OR = median(or)) |> pull()
@@ -408,8 +433,8 @@ pvalues_at_final <- sim1$df_not_stopped_interim |> filter(look == 2) |> select(p
 power_1_look <- mean(pvalues_at_final < 0.05)*100
 ```
 
--   `r (sim1$df_not_stopped_interim |> group_by(trial) |> slice_head(n = 1) |> ungroup() |> count(overall_success))[2,2]` out of ``r max(sim1$df_not_stopped_interim$trial)` trials with $p < \alpha$, with 2 Looks and Pocock correction
--   `r power_1_look`  out of `r max(sim1$df_not_stopped_interim$trial)` when not doing interim analysis an one-tailed $\alpha$ of 0.05 at final analysis
+-   `r (sim1$df_not_stopped_interim |> group_by(trial) |> slice_head(n = 1) |> ungroup() |> count(overall_success))[2,2]` out of \``r max(sim1$df_not_stopped_interim$trial)` trials with $p < \alpha$, with 2 Looks and Pocock correction
+-   `r power_1_look` out of `r max(sim1$df_not_stopped_interim$trial)` when not doing interim analysis an one-tailed $\alpha$ of 0.05 at final analysis
 
 ```{r}
 #| echo: false
@@ -419,3 +444,108 @@ power_1_look <- mean(pvalues_at_final < 0.05)*100
 
 plot_interim_or_OvScs(data = sim1$df_stopped_interim, true_effect = sim1$trueOR, x_breaks = sim1$analyses_nPatients, design = sim1$design, event_rate = sim1$death0, title_suffix = "Stopped at interim")
 ```
+
+## Type I error with 2 looks {.smaller}
+
+-   $P(Event)$ of `r sim3$death0` in control group, `r sim3$death1` in intervention group
+-   `r max(sim3$analyses_nPatients)` Patients per Trial, `r max(sim3$df_not_stopped_interim$trial)` trials.
+-   *True* OR: `r round(sim3$trueOR, digits = 2)`
+
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 4.5
+
+p3.1
+```
+
+## Type I error 2 looks {.smaller}
+
+-   $P(Event)$ of `r sim3$death0` in control group, `r sim3$death1` in intervention group
+-   `r max(sim3$analyses_nPatients)` Patients per Trial, `r max(sim3$df_not_stopped_interim$trial)` trials.
+-   *True* OR: `r round(sim3$trueOR, digits = 2)`
+
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 4.5
+
+p3.2
+```
+
+## Type I error with 2 looks {.smaller}
+
+-   $P(Event)$ of `r sim3$death0` in control group, `r sim3$death1` in intervention group
+-   `r max(sim3$analyses_nPatients)` Patients per Trial, `r max(sim3$df_not_stopped_interim$trial)` trials.
+-   *True* OR: `r round(sim3$trueOR, digits = 2)`
+
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 4.5
+
+p3.3
+```
+
+## Type I error with 2 looks {.smaller}
+
+```{r}
+Type_I_error_2_looks <- sim3$df_not_stopped_interim |> filter(overall_success == 1) |> select(trial) |> unique() |> pull()
+Type_I_error_2_looks <- length(Type_I_error_2_looks)
+
+sim3_Error_1_look <- sim3$df_not_stopped_interim |> filter(look == 2) |> select(pvalue) |> pull()
+sim3_Error_1_look <- mean(sim3_Error_1_look < 0.05)*100
+
+```
+
+-   With 2 looks we would have observed `r Type_I_error_2_looks` p-values $< \alpha$ (out of `r length(unique(sim3$df_not_stopped_interim$trial))`)
+
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 4.5
+
+p3.4
+```
+
+## Type I error with 1 look {.smaller}
+
+-   With 2 looks we would have observed `r Type_I_error_2_looks` p-values $< \alpha$ (out of `r length(unique(sim3$df_not_stopped_interim$trial))`)
+-   With only 1 final look, we would have observed `r sim3_Error_1_look` p-values $< \alpha$ (out of `r length(unique(sim3$df_not_stopped_interim$trial))`)
+
+```{r}
+#| echo: false
+#| fig-width: 10
+#| fig-height: 4.5
+
+p3.5
+```
+
+## Summary
+
+1.  Trials that stop early for efficacy will tend to overestimate the treatment effect
+
+    a.  (The point estimate will tend to be higher than the true treatment effect)
+
+2.  This does **not** mean that the intervention is less likely to work
+
+3.  Sequential designs do not have the goal to quantify the strength of evidence, or provide accurate estimates of the effect size
+
+## Summary {.smaller}
+
+-   Error control is at the heart of frequentist statistics, and achieved with sequential analysis
+-   The population effect size is always uncertain $\rightarrow$ when we power for an expected effect size there is considerable uncertainty about our statistical power $\rightarrow$ Type II Error rate *unclear*
+-   If we determine the smallest effect size of interest $\rightarrow$ we can design our study with a *known* Type II error rate to detect or reject this value.
+-   Reporting adjusted (shrunk) effect sizes can be useful
+
+> The strongest possible sample size justification is based on an explicit statement of the smallest effect size that is considered interesting.[^2]
+
+[^2]: [Improving Your Statistical Inferences - 8 Sample Size Justification (lakens.github.io)](https://lakens.github.io/statistical_inferences/08-samplesizejustification.html#what-is-the-smallest-effect-size-of-interest)
+
+## Summary {.smaller}
+
+-   **"Winners curse"**
+    -   Overestimation of effect sizes is not only a problem of trials stopped early for efficacy
+-   The median estimated power of 20'000 RCTs (for the actual effect size) from the Cochrane Database was 13%[^3] $\rightarrow$ overestimation widespread
+
+[^3]: Zwet, Erik van, Simon Schwab, and Stephen Senn. 2021. “The Statistical Properties of RCTs and a Proposal for Shrinkage.” *Statistics in Medicine* 40 (27): 6107–17.
